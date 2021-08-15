@@ -2,8 +2,10 @@
 #define _ENGINE_GL_H
 
 #include "glad/glad.h"
-#include "SDL2/SDL.h"
-#include "SDL2/SDL_opengl.h"
+#include "GLFW/glfw3.h"
+
+// #include "SDL2/SDL.h"
+// #include "SDL2/SDL_opengl.h"
 #include "stb_image.h"
 
 #include "glm/glm.hpp"
@@ -17,37 +19,42 @@
 
 namespace engine {
     namespace kb {
+        //  https://www.glfw.org/docs/3.3/group__keys.html
         enum keyCodes{
-            Unknown = 0,
-            A = 4, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
-            k1, k2, k3, k4, k5, k6, k7, k8, k9, k0,
-            Return, Escape, Backspace, Tab, Space, Minus, Equals, Leftbracket, Rightbracket, Backslash,
-            NonUSHash, Semicolon, Apostrophe, Grave, Comma, Period, Slash, Capslock,
-            F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12,
-            Printscreen, Scrolllock, Pause, Insert, Home, Pageup, Delete, End, Pagedown,
-            Right, Left, Down, Up, Numlockclear,
-            nDivide, nMultiplly, nMinus, nPlus, nEnter,
-            n1, n2, n3, n4, n5, n6, n7, n8, n9, n0,
-            nPeriod, NonUSBackslash, Application, Power, nEquals,
-            F13, F14, F15, F16, F17, F18, F19, F20, F21, F22, F23, F24,
-            Execute, Help, Menu, Select, Stop, Again, Undo, Cut, Copy, Paste, Find, Mute,
-            VolumeUp, VolumeDown,
-            nComma = 133, nEqualsAs400,
-            LCtrl = 224, LShift, LAlt, LGUI, RCtrl, RShift, RAlt, RGUI,
-
-            KeycodesLength = 284
+            Unknown = -1,
+            Space = 32,
+            Apostrophe = 39,
+            Comma = 44, Minus, Period, Slash,
+            k0, k1, k2, k3, k4, k5, k6, k7, k8, k9,
+            Semicolon = 59,
+            Equals = 61,
+            A = 65, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
+            Leftbracket, Backslash, Rightbracket,
+            Grave_Accent = 96,
+            Escape = 256, Enter, Tab, Backspace, Insert, Delete, Right, Left, Down, Up,
+            Pageup, Pagedown, Home, End,
+            Capslock = 280, Scrolllock, Numlock, Printscreen, Pause,
+            F1 = 290, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12,
+            F13, F14, F15, F16, F17, F18, F19, F20, F21, F22, F23, F24, F25,
+            n0, n1, n2, n3, n4, n5, n6, n7, n8, n9,
+            nPeriod, nDivide, nMultiply, nMinus, nPlus, nEnter, nEqual,
+            LShift = 340, LControl, LAlt, LSuper,
+            RShift, RControl, RAlt, RSuper, Menu,
+            
+            KeycodesLength = keyCodes::Menu
         };
     }
 
-    extern int mouseX, mouseY, mouseMoveX, mouseMoveY;
+    extern double mouseX, mouseY, mouseMoveX, mouseMoveY;
     extern bool quit;
-    extern bool keyState[kb::KeycodesLength];
+    extern int keyState[kb::KeycodesLength];
     extern bool keyPressed[kb::KeycodesLength];
+    extern void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods);
     void inputs();
 
     namespace gl {
-        extern SDL_Window *window;
-        extern SDL_GLContext maincontext;
+        extern GLFWwindow *window;
+        // extern SDL_GLContext maincontext;
 
         struct modelVertex {
             glm::vec3 Position;
@@ -57,7 +64,7 @@ namespace engine {
 
         class VAO {
             public:
-                GLuint ID;
+                GLuint *ID;
                 VAO();
                 ~VAO();
                 void bind();
@@ -66,7 +73,7 @@ namespace engine {
 
         class VBO {
             public:
-                GLuint ID_VBO, ID_EBO;
+                GLuint *ID_VBO, *ID_EBO;
                 int vertexAttribs;
                 size_t bufferSizeVert, bufferSizeInd;
                 VBO();
@@ -92,7 +99,7 @@ namespace engine {
         class FBO
         {
             public:
-                GLuint ID;
+                GLuint *ID;
 
                 FBO();
                 ~FBO();
@@ -103,7 +110,7 @@ namespace engine {
         class RBO
         {
             public:
-                GLuint ID;
+                GLuint *ID;
 
                 RBO();
                 ~RBO();
@@ -120,7 +127,7 @@ namespace engine {
                 Texture(Texture&& t);
                 Texture& operator=(Texture&& t);
 
-                GLuint ID;
+                GLuint *ID;
                 int srcWidth, srcHeight, srcChannels;
                 std::string type;
                 std::string path;
