@@ -12,9 +12,7 @@ namespace engine {
 
     //  set game controls here
     enum inputKeys {
-        inputUp, inputDown, inputLeft, inputRight,
-        inputFire, inputFocus, inputBomb, inputPause,
-        inputQuit, inputRestart, inputSkip
+        jump
     };
 
     enum Drawmode {

@@ -25,19 +25,24 @@ namespace engine {
     int scrWidth, scrHeight, drawWidth, drawHeight;
     int viewport[4], scrMode;
     float scalex, scaley;
+
+    float deltatime;
     
-    uint32_t controls[inputSkip + 1];
+    uint32_t controls[1];
 
     //  framerate stuff
     static bool _vsync;
     uint32_t fps;
     double ticks, frameTimeTicks;
     std::chrono::high_resolution_clock::time_point cur_time, next_time;
+    //  v this sucks v
     #define _ENGINE_NOVSYNC_DELAY_MICROSECONDS 16666
 
     gl::Shader *shaderSpriteSheet, *shaderSpriteSheetInvert, *shaderUI, *pshader, *shader3d;
 
     static Drawmode currentDrawmode;
+
+    void resize_callback(GLFWwindow*, int, int);
 
 
 //  managed model loading stuff
@@ -661,30 +666,10 @@ namespace engine {
         debug_init();
 
         //  default controls if there's none in config
-        controls[inputUp] = 82;
-        controls[inputDown] = 81;
-        controls[inputLeft] = 80;
-        controls[inputRight] = 79;
-        controls[inputFire] = 29;
-        controls[inputFocus] = 225;
-        controls[inputBomb] = 27;
-        controls[inputPause] = 41;
-        controls[inputQuit] = 20;
-        controls[inputRestart] = 21;
-        controls[inputSkip] = 224;
+        controls[jump] = kb::Space;
 
         std::string inputStrings[] = {
-            "Up",
-            "Down",
-            "Left",
-            "Right",
-            "Fire",
-            "Focus",
-            "Bomb",
-            "Pause",
-            "Quit",
-            "Restart",
-            "Skip"
+            "Jump"
         };
 
         std::ifstream file;//(settingsPath, std::ifstream::in);
@@ -738,28 +723,12 @@ namespace engine {
                 next += offset + 1;
                 offset = 0;
 
-                if(id == "Width") {
-                    width_win = std::strtol(value.c_str(), nullptr, 0);
-                } else if(id == "Height") {
-                    height_win = std::strtol(value.c_str(), nullptr, 0);
-                } else if(id == "Vsync") {
+                if(id == "Vsync") {
                     vsync = value == "true" ? true : false;
                 } else if(id == "Screenmode") {
-                    if(value == "windowed") screenMode = 4;
+                    if(value == "windowed") screenMode = 0;
                     if(value == "borderless") screenMode = 1;
                     if(value == "fullscreen") screenMode = 2;
-                } else {
-                    //  check if its an input setting
-                    int x = 0;
-                    while(x < inputSkip && id != inputStrings[x]) {
-                        ++x;
-                    }
-
-                    if(x < inputSkip) {
-                        //  found
-                        //  https://wiki.libsdl.org/SDLScancodeLookup
-                        controls[x] = stoul(value);
-                    }
                 }
 
             }
@@ -795,6 +764,10 @@ namespace engine {
 
         //  for borderless fullscreen calculation
         const GLFWvidmode *dmode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+
+        //  todo: make this settings shit for windowing much better
+        //  aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        //  add way to keep drawsize same as window size
         switch(screenMode) {
             case 1:
                 //  borderless fullscreen
@@ -803,18 +776,22 @@ namespace engine {
                 glfwWindowHint(GLFW_BLUE_BITS, dmode->blueBits);
                 glfwWindowHint(GLFW_REFRESH_RATE, dmode->refreshRate);
                 gl::window = glfwCreateWindow(dmode->width, dmode->height, title, glfwGetPrimaryMonitor(), NULL);
+                glfwSetWindowMonitor(gl::window, glfwGetPrimaryMonitor(), 0, 0, dmode->width, dmode->height, GLFW_DONT_CARE);
                 scrWidth = dmode->width;
                 scrHeight = dmode->height;
                 break;
             case 2:
                 //  fullscreen
                 gl::window = glfwCreateWindow(width_draw, height_draw, title, glfwGetPrimaryMonitor(), NULL);
+                glfwSetWindowMonitor(gl::window, glfwGetPrimaryMonitor(), 0, 0, dmode->width, dmode->height, GLFW_DONT_CARE);
                 scrWidth = width_draw;
                 scrHeight = height_draw;
                 break;
             case 3:
                 //  test, fullscreen but draw canvas mapped to screen res
+                //  this is just borderless fullscreen theres no need for this with glfw
                 gl::window = glfwCreateWindow(width_draw, height_draw, title, glfwGetPrimaryMonitor(), NULL);
+                glfwSetWindowMonitor(gl::window, glfwGetPrimaryMonitor(), 0, 0, dmode->width, dmode->height, GLFW_DONT_CARE);
                 scrWidth = width_draw;
                 scrHeight = height_draw;
                 break;
@@ -830,6 +807,11 @@ namespace engine {
         glfwMakeContextCurrent(gl::window);
         gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
         glfwSetKeyCallback(gl::window, key_callback);
+        glfwSetWindowSizeCallback(gl::window, resize_callback);
+
+        //  todo: change later
+        glfwSetWindowAspectRatio(gl::window, 4, 3);
+
 
         switch(screenMode) {
             case 3:
@@ -1037,6 +1019,12 @@ namespace engine {
 
     void mouseRelease() {
         glfwSetInputMode(gl::window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
+
+    void resize_callback(GLFWwindow *window, int w, int h) {
+        scrWidth = w;
+        scrHeight = h;
+        //  add drawsize here maybe sometime for some reason idk
     }
 
 }
