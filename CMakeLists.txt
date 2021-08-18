@@ -6,7 +6,6 @@ set(OUT_DIR ${CMAKE_BINARY_DIR}/bin)
 set(IN_RES_DIR ./res)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ./bin)
-#set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ./bin)
 
 add_library(engine STATIC engine/engine_gl.cpp engine/engine.cpp engine/glad.c engine/stb_image.cpp engine/debug.cpp)
 target_include_directories(engine PUBLIC ./engine)
@@ -27,12 +26,8 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     endif()
 endif()
 
-#add_library(game STATIC source/game/bullet.cpp)
-#target_include_directories(game PUBLIC . ./engine ./source)
-#set_property(TARGET game PROPERTY CXX_STANDARD 17)
-#set_property(TARGET game PROPERTY CXX_STANDARD_REQUIRED ON)
 
-add_executable(flappyy source/main.cpp)
+add_executable(flappyy source/main.cpp source/game.cpp)
 target_include_directories(flappyy PUBLIC .)
 target_link_libraries(flappyy engine)
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -49,6 +44,5 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     set_property(TARGET flappyy PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
 endif()
 
-#target_link_libraries(flappyy -lmingw32 -lSDL2main -lSDL2 -lSDL2_ttf -lSDL2_mixer)
 
 add_custom_command(TARGET flappyy PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory "${PROJECT_SOURCE_DIR}/res" $<TARGET_FILE_DIR:flappyy>)
