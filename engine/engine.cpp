@@ -100,7 +100,7 @@ namespace engine {
         UnloadModel(md->path);
     }
 
-    float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
+    float quadVertices[] = { // vertex attributes for a quad that fills the entire viewport in Normalized Device Coordinates.
         // positions   // texCoords
         -1.0f,  1.0f,  0.0f, 1.0f,
         -1.0f, -1.0f,  0.0f, 0.0f,
@@ -680,7 +680,8 @@ namespace engine {
     }
 
     //  load settings from file
-    bool init(const char *title, const char *settingsPath) {
+    //  TODO FIX FOR SUZUNAAN IDC FOR FLAPPYY
+    bool init(const char *title, int flags, int width, int height, int dwidth, int dheight, const char *settingsPath) {
         debug_init();
 
         //  default controls if there's none in config
@@ -694,7 +695,6 @@ namespace engine {
         std::string settings;
         //file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 
-
         try {
             file.open(settingsPath);
             std::stringstream filestream;
@@ -707,7 +707,6 @@ namespace engine {
             return false;
         }
         //  settings
-        int screenMode = 0;
         bool vsync = true;
         int width_win = 640, height_win = 480;
         const int width_draw = 640, height_draw = 480;  //  modify for non-static resolution shmup stuff
@@ -744,15 +743,13 @@ namespace engine {
                 if(id == "Vsync") {
                     vsync = value == "true" ? true : false;
                 } else if(id == "Screenmode") {
-                    if(value == "windowed") screenMode = 0;
-                    if(value == "borderless") screenMode = 1;
-                    if(value == "fullscreen") screenMode = 2;
+
                 }
 
             }
 
         }
-        init(title, screenMode, vsync, width_win, height_win, width_draw, height_draw);
+        init(title, flags, width, height, dwidth, dheight);
         return true;
     }
 
@@ -920,183 +917,6 @@ namespace engine {
             viewport[2] = scrWidth;
             viewport[3] = scrHeight;
         }
-    }
-
-
-
-
-
-
-
-    void init(const char *title, int screenMode, bool vsync, int width, int height) {
-        init(title, screenMode, vsync, width, height, width, height);
-    }
-
-    void init(const char *title, int screenMode, bool vsync, int width_win, int height_win, int width_draw, int height_draw) {
-        glfwInit();
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE); //add option for this later
-
-        for(int i = 0; i < kb::KeycodesLength; i++) {
-            keyState[i] = 0;
-        }
-
-
-        drawWidth = width_draw;
-        drawHeight = height_draw;
-        scrMode = screenMode;
-        fps = 0u;
-        ticks = glfwGetTime();
-        frameTimeTicks = ticks;
-
-        //  for borderless fullscreen calculation
-        const GLFWvidmode *dmode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-
-        //  todo: make this settings shit for windowing much better
-        //  aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-        //  add way to keep drawsize same as window size
-        switch(screenMode) {
-            case 1:
-                //  borderless fullscreen
-                glfwWindowHint(GLFW_RED_BITS, dmode->redBits);
-                glfwWindowHint(GLFW_GREEN_BITS, dmode->greenBits);
-                glfwWindowHint(GLFW_BLUE_BITS, dmode->blueBits);
-                glfwWindowHint(GLFW_REFRESH_RATE, dmode->refreshRate);
-                gl::window = glfwCreateWindow(dmode->width, dmode->height, title, glfwGetPrimaryMonitor(), NULL);
-                glfwSetWindowMonitor(gl::window, glfwGetPrimaryMonitor(), 0, 0, dmode->width, dmode->height, GLFW_DONT_CARE);
-                scrWidth = dmode->width;
-                scrHeight = dmode->height;
-                break;
-            case 2:
-                //  fullscreen
-                gl::window = glfwCreateWindow(width_draw, height_draw, title, glfwGetPrimaryMonitor(), NULL);
-                glfwSetWindowMonitor(gl::window, glfwGetPrimaryMonitor(), 0, 0, dmode->width, dmode->height, GLFW_DONT_CARE);
-                scrWidth = width_draw;
-                scrHeight = height_draw;
-                break;
-            case 3:
-                //  test, fullscreen but draw canvas mapped to screen res
-                //  this is just borderless fullscreen theres no need for this with glfw
-                gl::window = glfwCreateWindow(width_draw, height_draw, title, glfwGetPrimaryMonitor(), NULL);
-                glfwSetWindowMonitor(gl::window, glfwGetPrimaryMonitor(), 0, 0, dmode->width, dmode->height, GLFW_DONT_CARE);
-                scrWidth = width_draw;
-                scrHeight = height_draw;
-                break;
-            case 0:
-            default:
-                //  normal windowed
-                gl::window = glfwCreateWindow(width_win, height_win, title, NULL, NULL);
-                scrWidth = width_win;
-                scrHeight = height_win;
-                break;
-        }
-        
-        glfwMakeContextCurrent(gl::window);
-        gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
-        glfwSetKeyCallback(gl::window, key_callback);
-        glfwSetWindowSizeCallback(gl::window, windowResizeCallback);
-
-        //  todo: change later
-        glfwSetWindowAspectRatio(gl::window, 4, 3);
-
-
-        switch(screenMode) {
-            case 3:
-            case 1:
-            {
-                float draw_ratio = (float)width_draw / (float)height_draw;
-                float screen_ratio = (float)dmode->width / (float)dmode->height;
-                if(draw_ratio > screen_ratio) {
-                    //  draw area is wider than screen
-                    float y_scale = (float)dmode->width / (float)width_draw;
-                    float height = (float)height_draw * y_scale;
-                    int offset = (dmode->height - (int)height) / 2;
-                    glViewport(0, offset, dmode->width, (int)height);
-                    viewport[0] = 0;
-                    viewport[1] = offset;
-                    viewport[2] = dmode->width;
-                    viewport[3] = (int)height;
-                    break;
-                } else if(draw_ratio < screen_ratio) {
-                    //  draw area is narrower than screen
-                    float x_scale = (float)dmode->height / (float)height_draw;
-                    float width = (float)width_draw * x_scale;
-                    int offset = (dmode->width - (int)width) / 2;
-                    glViewport(offset, 0, (int)width, dmode->height);
-                    viewport[0] = offset;
-                    viewport[1] = 0;
-                    viewport[2] = (int)width;
-                    viewport[3] = dmode->height;
-                    break;
-                } else {
-                    //  matches aspect ratio, although i probably need a way better way to check this
-                    //  handy dandy c++17 feature to make the fallthrough warning go away
-                    [[fallthrough]];
-                }
-            }
-            case 2:
-                glViewport(0, 0, width_draw, height_draw);
-                viewport[0] = 0;
-                viewport[1] = 0;
-                viewport[2] = width_draw;
-                viewport[3] = height_draw;
-                break;
-            case 0:
-            default:
-                glViewport(0, 0, width_win, height_win);
-                viewport[0] = 0;
-                viewport[1] = 0;
-                viewport[2] = width_win;
-                viewport[3] = height_win;
-                break;
-        }
-
-        //  precalculate stuff for setviewport
-        //  set viewport to specified rectangle (inside draw area)
-        //  need to calculate x and y based off of the existing draw area
-        scalex = (float)scrWidth / (float)drawWidth;
-        scaley = (float)scrHeight / (float)drawHeight;
-
-        if(scrMode == 1 || scrMode == 3) {
-            float draw_ratio = (float)drawWidth / (float)drawHeight;
-            float screen_ratio = (float)scrWidth / (float)scrHeight;
-            if(draw_ratio > screen_ratio) {
-                //  draw area is wider than screen
-                scaley = scalex;
-            } else if(draw_ratio < screen_ratio) {
-                //  draw area is narrower than screen
-                scalex = scaley;
-            }
-        }
-
-        if(vsync) {
-            _vsync = true;
-            glfwSwapInterval(1);
-        } else {
-            _vsync = false;
-            glfwSwapInterval(0);
-
-            next_time = std::chrono::high_resolution_clock::now() + std::chrono::microseconds(_ENGINE_NOVSYNC_DELAY_MICROSECONDS);
-            // next_time = std::chrono::high_resolution_clock::now();
-            #ifdef _MSC_VER
-            timeBeginPeriod(1);
-            #endif
-        }
-
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        // glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-        // stbi_set_flip_vertically_on_load(true);  // don't need this because the shader i wrote accounts for it
-        
-        InitialiseDrawmodes(); 
-        SetDrawmode(DrawmodeSprite);
-
-        loadedModels = new std::unordered_map<std::string, ManagedModel*>();
     }
 
     void flip() {       

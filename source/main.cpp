@@ -8,7 +8,10 @@ extern void unload_game();
 
 int main(int argv, char** args) {
     // engine::init("Flappy Aya", "./flappyy.ini");
-    engine::init("Flappy Aya", 0, true, 640, 480);
+    const int flags = engine::ENGINE_INIT_VSYNC | 
+                engine::ENGINE_INIT_RESIZEABLE | 
+                engine::ENGINE_INIT_FIXEDASPECT;
+    engine::init("Flappy Aya", flags, 960, 720);
 
     load_game();
 

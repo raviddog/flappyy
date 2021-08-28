@@ -25,9 +25,9 @@ void logic_game() {
         //  end
     }
 
-    if(engine::checkKeyPressed(engine::jump)) {
-        aya_dy += aya_jump;
-    }
+    // if(engine::checkKeyPressed(engine::jump)) {
+    //     aya_dy += aya_jump;
+    // }
 
 
 
@@ -52,5 +52,5 @@ void load_game() {
 
 void unload_game() {
     delete aya;
-    delete bg_objects;
+    delete onbashira;
 }
