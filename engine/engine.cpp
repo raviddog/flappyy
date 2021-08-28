@@ -9,6 +9,7 @@
 #include <unordered_map>
 
 #ifdef _MSC_VER
+#define WIN32_LEAN_AND_MEAN
 #include "windows.h"
 #include "timeapi.h"
 #endif
@@ -25,24 +26,30 @@ namespace engine {
     int scrWidth, scrHeight, drawWidth, drawHeight;
     int viewport[4], scrMode;
     float scalex, scaley;
+    
+    int aspect_w, aspect_h, winflags;
 
     float deltatime;
     
-    uint32_t controls[1];
+    uint32_t controls[controlSize];
 
     //  framerate stuff
-    static bool _vsync;
+    static bool _vsync, _fixeddrawsize = true;
     uint32_t fps;
     double ticks, frameTimeTicks;
     std::chrono::high_resolution_clock::time_point cur_time, next_time;
+    
+    
     //  v this sucks v
-    #define _ENGINE_NOVSYNC_DELAY_MICROSECONDS 16666
+    #define _ENGINE_FPS_CAP 60
+    #define _ENGINE_NOVSYNC_DELAY_MICROSECONDS 1000000 / _ENGINE_FPS_CAP
 
     gl::Shader *shaderSpriteSheet, *shaderSpriteSheetInvert, *shaderUI, *pshader, *shader3d;
 
     static Drawmode currentDrawmode;
 
-    void resize_callback(GLFWwindow*, int, int);
+    void windowResizeCallback(GLFWwindow*, int, int);
+    void recalculateDrawScale();
 
 
 //  managed model loading stuff
@@ -661,6 +668,17 @@ namespace engine {
         shader3d->setMat4("model", modelmat);
     }
 
+    int gcd(int, int);
+    int gcd(int a, int b) {
+        return b ? gcd(b, a % b) : a;
+    }
+
+    void aspectRatio(int *x, int *y) {
+        int d = gcd(*x, *y);
+        *x = *x / d;
+        *y = *y / d;
+    }
+
     //  load settings from file
     bool init(const char *title, const char *settingsPath) {
         debug_init();
@@ -738,6 +756,178 @@ namespace engine {
         return true;
     }
 
+    void init(const char *title, int flags, int width, int height) {
+        init(title, flags, width, height, width, height);
+    }
+
+    //  2d init test
+    void init(const char *title, int flags, int width, int height, int dwidth, int dheight) {
+        //  i assume the only reason you'd use this one is if you wanted a fixed draw width/height
+
+        /*
+            flags contains a list of init flags
+            - resizeable
+            - vsync
+            -
+            width can be fixed window width, suggested width or an aspect ratio based on selected screen init flags
+        
+        */
+
+        glfwInit();
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+        glfwWindowHint(GLFW_RESIZABLE, flags & ENGINE_INIT_RESIZEABLE);
+
+
+        for(int i = 0; i < kb::KeycodesLength; i++) {
+            keyState[i] = 0;
+        }
+
+        drawWidth = dwidth;
+        drawHeight = dheight;
+        fps = 0u;
+        ticks = glfwGetTime();
+        frameTimeTicks = ticks;
+        winflags = flags;
+
+        const GLFWvidmode *dmode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+        if(winflags & ENGINE_INIT_TRUEFULLSCREEN) {
+            glfwWindowHint(GLFW_RED_BITS, dmode->redBits);
+            glfwWindowHint(GLFW_GREEN_BITS, dmode->greenBits);
+            glfwWindowHint(GLFW_BLUE_BITS, dmode->blueBits);
+            if(winflags & ENGINE_INIT_FIXEDFPS) {
+                glfwWindowHint(GLFW_REFRESH_RATE, _ENGINE_FPS_CAP);
+            } else {
+                glfwWindowHint(GLFW_REFRESH_RATE, dmode->refreshRate);
+            }
+            gl::window = glfwCreateWindow(width, height, title, glfwGetPrimaryMonitor(), NULL);
+            glfwSetWindowMonitor(gl::window, glfwGetPrimaryMonitor(), 0, 0, dmode->width, dmode->height, GLFW_DONT_CARE);
+            scrWidth = width;
+            scrHeight = height;
+        } else if(winflags & ENGINE_INIT_BORDERLESS) {
+            glfwWindowHint(GLFW_RED_BITS, dmode->redBits);
+            glfwWindowHint(GLFW_GREEN_BITS, dmode->greenBits);
+            glfwWindowHint(GLFW_BLUE_BITS, dmode->blueBits);
+            glfwWindowHint(GLFW_REFRESH_RATE, dmode->refreshRate);
+            gl::window = glfwCreateWindow(dmode->width, dmode->height, title, glfwGetPrimaryMonitor(), NULL);
+            glfwSetWindowMonitor(gl::window, glfwGetPrimaryMonitor(), 0, 0, dmode->width, dmode->height, GLFW_DONT_CARE);
+            scrWidth = dmode->width;
+            scrHeight = dmode->height;
+        } else {
+            gl::window = glfwCreateWindow(width, height, title, NULL, NULL);
+            scrWidth = width;
+            scrHeight = height;
+        }
+
+        glfwMakeContextCurrent(gl::window);
+        gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+        glfwSetKeyCallback(gl::window, key_callback);
+        glfwSetWindowSizeCallback(gl::window, windowResizeCallback);
+
+        aspect_w = drawWidth;
+        aspect_h = drawHeight;
+        aspectRatio(&aspect_w, &aspect_h);
+
+        if(winflags & ENGINE_INIT_FIXEDASPECT) {
+            glfwSetWindowAspectRatio(gl::window, aspect_w, aspect_h);
+        }
+
+        if(winflags & ENGINE_INIT_VSYNC) {
+            _vsync = true;
+            glfwSwapInterval(1);
+        } else {
+            _vsync = false;
+            glfwSwapInterval(0);
+
+            next_time = std::chrono::high_resolution_clock::now() + std::chrono::microseconds(_ENGINE_NOVSYNC_DELAY_MICROSECONDS);
+            // next_time = std::chrono::high_resolution_clock::now();
+            #ifdef _MSC_VER
+            timeBeginPeriod(1);
+            #endif
+        }
+
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        // glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        // stbi_set_flip_vertically_on_load(true);  // don't need this because the shader i wrote accounts for it
+        
+        InitialiseDrawmodes(); 
+        SetDrawmode(DrawmodeSprite);
+
+        loadedModels = new std::unordered_map<std::string, ManagedModel*>();
+    }
+
+    void windowResizeCallback(GLFWwindow *window, int width, int height) {
+        scrWidth = width;
+        scrHeight = height;
+        
+        recalculateDrawScale();
+    }
+
+    //  run this after window resizing
+    void recalculateDrawScale() {
+        //  precalculate stuff for setviewport
+        //  set viewport to specified rectangle (inside draw area)
+        //  need to calculate x and y based off of the existing draw area
+        scalex = (float)scrWidth / (float)drawWidth;
+        scaley = (float)scrHeight / (float)drawHeight;
+
+        if((winflags & ENGINE_INIT_FIXEDDRAWSIZE) || (winflags & ENGINE_INIT_FIXEDASPECT && winflags & ENGINE_INIT_BORDERLESS)) {
+            scalex = (float)scrWidth / (float)drawWidth;
+            scaley = (float)scrHeight / (float)drawHeight;
+            
+            const GLFWvidmode *dmode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+            float draw_ratio = (float)drawWidth / (float)drawHeight;
+            float screen_ratio = (float)dmode->width / (float)dmode->height;
+            if(draw_ratio > screen_ratio) {
+                //  draw area is wider than screen
+                float y_scale = (float)dmode->width / (float)drawWidth;
+                float height = (float)drawHeight * y_scale;
+                int offset = (dmode->height - (int)height) / 2;
+                glViewport(0, offset, dmode->width, (int)height);
+                viewport[0] = 0;
+                viewport[1] = offset;
+                viewport[2] = dmode->width;
+                viewport[3] = (int)height;
+                scaley = scalex;
+            } else if(draw_ratio < screen_ratio) {
+                //  draw area is narrower than screen
+                float x_scale = (float)dmode->height / (float)drawHeight;
+                float width = (float)drawWidth * x_scale;
+                int offset = (dmode->width - (int)width) / 2;
+                glViewport(offset, 0, (int)width, dmode->height);
+                viewport[0] = offset;
+                viewport[1] = 0;
+                viewport[2] = (int)width;
+                viewport[3] = dmode->height;
+                scalex = scaley;
+            } else {
+                //  no letterboxing
+                glViewport(0, 0, scrWidth, scrHeight);
+                viewport[0] = 0;
+                viewport[1] = 0;
+                viewport[2] = scrWidth;
+                viewport[3] = scrHeight;
+            }
+        } else {
+            //  no letterboxing
+            glViewport(0, 0, scrWidth, scrHeight);
+            viewport[0] = 0;
+            viewport[1] = 0;
+            viewport[2] = scrWidth;
+            viewport[3] = scrHeight;
+        }
+    }
+
+
+
+
+
+
+
     void init(const char *title, int screenMode, bool vsync, int width, int height) {
         init(title, screenMode, vsync, width, height, width, height);
     }
@@ -807,7 +997,7 @@ namespace engine {
         glfwMakeContextCurrent(gl::window);
         gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
         glfwSetKeyCallback(gl::window, key_callback);
-        glfwSetWindowSizeCallback(gl::window, resize_callback);
+        glfwSetWindowSizeCallback(gl::window, windowResizeCallback);
 
         //  todo: change later
         glfwSetWindowAspectRatio(gl::window, 4, 3);
@@ -1019,12 +1209,6 @@ namespace engine {
 
     void mouseRelease() {
         glfwSetInputMode(gl::window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-    }
-
-    void resize_callback(GLFWwindow *window, int w, int h) {
-        scrWidth = w;
-        scrHeight = h;
-        //  add drawsize here maybe sometime for some reason idk
     }
 
 }
