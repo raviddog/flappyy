@@ -24,6 +24,7 @@ namespace engine {
     Camera3D *Camera3D::bound = nullptr;
 
     int scrWidth, scrHeight, drawWidth, drawHeight;
+    bool maximised = false;
     int viewport[4], scrMode;
     float scalex, scaley;
     
@@ -50,8 +51,8 @@ namespace engine {
 
     static Drawmode currentDrawmode;
 
+    void windowMaximiseCallback(GLFWwindow*, int);
     void windowResizeCallback(GLFWwindow*, int, int);
-    void recalculateDrawScale();
 
 
 //  managed model loading stuff
@@ -793,6 +794,7 @@ namespace engine {
 
         const GLFWvidmode *dmode = glfwGetVideoMode(glfwGetPrimaryMonitor());
         if(winflags & ENGINE_INIT_TRUEFULLSCREEN) {
+            maximised = true;
             glfwWindowHint(GLFW_RED_BITS, dmode->redBits);
             glfwWindowHint(GLFW_GREEN_BITS, dmode->greenBits);
             glfwWindowHint(GLFW_BLUE_BITS, dmode->blueBits);
@@ -806,6 +808,7 @@ namespace engine {
             scrWidth = width;
             scrHeight = height;
         } else if(winflags & ENGINE_INIT_BORDERLESS) {
+            maximised = true;
             glfwWindowHint(GLFW_RED_BITS, dmode->redBits);
             glfwWindowHint(GLFW_GREEN_BITS, dmode->greenBits);
             glfwWindowHint(GLFW_BLUE_BITS, dmode->blueBits);
@@ -824,6 +827,7 @@ namespace engine {
         gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
         glfwSetKeyCallback(gl::window, key_callback);
         glfwSetWindowSizeCallback(gl::window, windowResizeCallback);
+        glfwSetWindowMaximizeCallback(gl::window, windowMaximiseCallback);
 
         aspect_w = drawWidth;
         aspect_h = drawHeight;
@@ -858,57 +862,66 @@ namespace engine {
         SetDrawmode(DrawmodeSprite);
 
         loadedModels = new std::unordered_map<std::string, ManagedModel*>();
-        recalculateDrawScale();
 
         last_frame = std::chrono::high_resolution_clock::now();
         deltatime = (std::chrono::high_resolution_clock::now() - last_frame).count() / 1000000000.;
         last_frame = std::chrono::high_resolution_clock::now();
     }
 
-    void windowResizeCallback(GLFWwindow *window, int width, int height) {
-        scrWidth = width;
-        scrHeight = height;
-        
-        recalculateDrawScale();
+    void windowMaximiseCallback(GLFWwindow *window, int m) {
+        maximised = m == 1? true : false;
     }
 
     //  run this after window resizing
-    void recalculateDrawScale() {
+    void windowResizeCallback(GLFWwindow *window, int width, int height) {
+        scrWidth = width;
+        scrHeight = height;
         //  precalculate stuff for setviewport
         //  set viewport to specified rectangle (inside draw area)
         //  need to calculate x and y based off of the existing draw area
         scalex = (float)scrWidth / (float)drawWidth;
         scaley = (float)scrHeight / (float)drawHeight;
 
-        if((winflags & ENGINE_INIT_FIXEDDRAWSIZE) || (winflags & ENGINE_INIT_FIXEDASPECT && winflags & ENGINE_INIT_BORDERLESS)) {
+        if((winflags & ENGINE_INIT_FIXEDDRAWSIZE) || (winflags & ENGINE_INIT_FIXEDASPECT && maximised)) {
+            
+            
             scalex = (float)scrWidth / (float)drawWidth;
             scaley = (float)scrHeight / (float)drawHeight;
             
-            const GLFWvidmode *dmode = glfwGetVideoMode(glfwGetPrimaryMonitor());
             float draw_ratio = (float)drawWidth / (float)drawHeight;
-            float screen_ratio = (float)dmode->width / (float)dmode->height;
+            float screen_ratio = (float)scrWidth / (float)scrHeight;
             if(draw_ratio > screen_ratio) {
                 //  draw area is wider than screen
-                float y_scale = (float)dmode->width / (float)drawWidth;
+                float y_scale = (float)scrWidth / (float)drawWidth;
                 float height = (float)drawHeight * y_scale;
-                int offset = (dmode->height - (int)height) / 2;
-                glViewport(0, offset, dmode->width, (int)height);
+                int offset = (scrHeight - (int)height) / 2;
+                glViewport(0, offset, scrWidth, (int)height);
                 viewport[0] = 0;
                 viewport[1] = offset;
-                viewport[2] = dmode->width;
+                viewport[2] = scrWidth;
                 viewport[3] = (int)height;
                 scaley = scalex;
+
+                if(!(winflags & ENGINE_INIT_FIXEDDRAWSIZE)) {
+                    drawWidth = scrWidth;
+                    drawHeight = scrHeight - offset;
+                }
             } else if(draw_ratio < screen_ratio) {
                 //  draw area is narrower than screen
-                float x_scale = (float)dmode->height / (float)drawHeight;
+                float x_scale = (float)scrHeight / (float)drawHeight;
                 float width = (float)drawWidth * x_scale;
-                int offset = (dmode->width - (int)width) / 2;
-                glViewport(offset, 0, (int)width, dmode->height);
+                int offset = (scrWidth - (int)width) / 2;
+                glViewport(offset, 0, (int)width, scrHeight);
                 viewport[0] = offset;
                 viewport[1] = 0;
                 viewport[2] = (int)width;
-                viewport[3] = dmode->height;
+                viewport[3] = scrHeight;
                 scalex = scaley;
+
+                if(!(winflags & ENGINE_INIT_FIXEDDRAWSIZE)) {
+                    drawWidth = scrWidth - offset;
+                    drawHeight = scrHeight;
+                }
             } else {
                 //  no letterboxing
                 glViewport(0, 0, scrWidth, scrHeight);
@@ -917,6 +930,10 @@ namespace engine {
                 viewport[2] = scrWidth;
                 viewport[3] = scrHeight;
             }
+
+            
+
+            
         } else {
             //  no letterboxing
             glViewport(0, 0, scrWidth, scrHeight);
@@ -924,7 +941,12 @@ namespace engine {
             viewport[1] = 0;
             viewport[2] = scrWidth;
             viewport[3] = scrHeight;
+            
+            drawWidth = width;
+            drawHeight = height;
         }
+
+        log_debug("resize callback\n");
     }
 
     void flip() {       
@@ -1010,7 +1032,9 @@ namespace engine {
 
     void setViewport() {
         //  no arguments resets the viewport to original
+        //  glviewport runs off of window resolution
         glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
+        //  this sets the effective draw resolution that gets scaled to viewport resolution
         glm::vec2 scrRes = glm::vec2((float)drawWidth, (float)drawHeight);
         shaderSpriteSheet->setVec2("res", scrRes);
     }
