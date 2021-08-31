@@ -780,6 +780,7 @@ namespace engine {
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
         glfwWindowHint(GLFW_RESIZABLE, flags & ENGINE_INIT_RESIZEABLE);
 
+        controls[jump] = kb::Space;
 
         for(int i = 0; i < kb::KeycodesLength; i++) {
             keyState[i] = 0;
