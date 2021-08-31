@@ -11,8 +11,7 @@ namespace engine {
 
     void *currentShader = nullptr;
     
-    void inputs() {
-
+    void inputs() {        
         if(glfwWindowShouldClose(gl::window)) {
             quit = true;
         }

@@ -28,8 +28,10 @@ namespace engine {
     float scalex, scaley;
     
     int aspect_w, aspect_h, winflags;
+    
 
-    float deltatime;
+    std::chrono::high_resolution_clock::time_point last_frame;
+    double deltatime;
     
     uint32_t controls[controlSize];
 
@@ -759,6 +761,7 @@ namespace engine {
 
     //  2d init test
     void init(const char *title, int flags, int width, int height, int dwidth, int dheight) {
+        debug_init();
         //  i assume the only reason you'd use this one is if you wanted a fixed draw width/height
 
         /*
@@ -855,6 +858,11 @@ namespace engine {
         SetDrawmode(DrawmodeSprite);
 
         loadedModels = new std::unordered_map<std::string, ManagedModel*>();
+        recalculateDrawScale();
+
+        last_frame = std::chrono::high_resolution_clock::now();
+        deltatime = (std::chrono::high_resolution_clock::now() - last_frame).count() / 1000000000.;
+        last_frame = std::chrono::high_resolution_clock::now();
     }
 
     void windowResizeCallback(GLFWwindow *window, int width, int height) {
@@ -922,6 +930,11 @@ namespace engine {
     void flip() {       
 
         using namespace std::chrono;
+
+        //  update deltatime
+        deltatime = (std::chrono::high_resolution_clock::now() - last_frame).count() / 1000000000.;
+        last_frame = std::chrono::high_resolution_clock::now();
+
         //  flip buffers
         glfwSwapBuffers(gl::window);
 
@@ -970,7 +983,7 @@ namespace engine {
         if(temp_ticks > ticks + 1.0) {
             std::stringstream d;
             d << "Frame time: " << temp_ticks - frameTimeTicks << "ms | ";
-            d << "FPS: " << fps;
+            d << "FPS: " << fps << " | Deltatime: " << deltatime;
             if(!_vsync) {
                 d << " | Slept: " << slept << "ms | ";
                 d << "Spun: " << temp;

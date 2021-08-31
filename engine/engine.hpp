@@ -40,6 +40,8 @@ namespace engine {
 
     extern gl::Shader *shaderSpriteSheet, *shaderSpriteSheetInvert, *shaderUI, *pshader, *shader3d;
 
+    extern double deltatime;
+
     bool checkKey(int key);
     bool checkKeyPressed(int key);
 
