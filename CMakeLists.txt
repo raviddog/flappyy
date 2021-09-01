@@ -35,7 +35,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         target_link_libraries(flappyy -Wl,-subsystem,console)
     endif()
     if(UNIX)
-        target_link_libraries(flappyy -Wl,-subsystem -ldl)
+        target_link_libraries(flappyy -ldl)
     endif()
 endif()
 
