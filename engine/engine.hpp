@@ -54,6 +54,7 @@ namespace engine {
 
     void setViewport();
     void setViewport(int x, int y, int w, int h);
+    void setDrawsize(int w, int h);
 
     void mouseCapture();
     void mouseRelease();

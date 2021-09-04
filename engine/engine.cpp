@@ -1035,18 +1035,23 @@ namespace engine {
         //  no arguments resets the viewport to original
         //  glviewport runs off of window resolution
         glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
-        //  this sets the effective draw resolution that gets scaled to viewport resolution
-        glm::vec2 scrRes = glm::vec2((float)drawWidth, (float)drawHeight);
-        shaderSpriteSheet->setVec2("res", scrRes);
+        //  auto change draw res if appropriate flags?
     }
 
-    void setViewport(int x, int y, int w, int h)
-    {
+    void setViewport(int x, int y, int w, int h) {
+        //  arguments provided in draw size
+        //  sets coordinates based on window size
+        //  scalex/scaley calculated on window size
         glViewport( viewport[0] + (int)(scalex * (float)x),
                     viewport[1] + (int)(scaley * (float)y),
                     (int)(scalex * (float)w),
                     (int)(scaley * (float)h));
-        glm::vec2 scrRes = glm::vec2((float)(w - x), (float)(h - y));
+    }
+
+    void setDrawsize(int w, int h) {
+        //  set size for sprite shader
+        //  this sets the effective draw resolution that gets scaled to viewport resolution
+        glm::vec2 scrRes = glm::vec2((float)w, (float)h);
         shaderSpriteSheet->setVec2("res", scrRes);
     }
 
