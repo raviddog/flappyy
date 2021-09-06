@@ -29,17 +29,15 @@ namespace engine {
     float scalex, scaley;
     
     int aspect_w, aspect_h, winflags;
-    
-
-    std::chrono::high_resolution_clock::time_point last_frame;
-    double deltatime;
+        
+    double deltatime, last_frame;
     
     uint32_t controls[controlSize];
 
     //  framerate stuff
     static bool _vsync, _fixeddrawsize = true;
     uint32_t fps;
-    double ticks, frameTimeTicks;
+    double ticks, frameTimeTicks, avgTicksTotal;
     std::chrono::high_resolution_clock::time_point cur_time, next_time;
     
     
@@ -864,9 +862,9 @@ namespace engine {
 
         loadedModels = new std::unordered_map<std::string, ManagedModel*>();
 
-        last_frame = std::chrono::high_resolution_clock::now();
-        deltatime = (std::chrono::high_resolution_clock::now() - last_frame).count() / 1000000000.;
-        last_frame = std::chrono::high_resolution_clock::now();
+        last_frame = glfwGetTime();
+        deltatime = glfwGetTime() - last_frame;
+        last_frame = glfwGetTime();
     }
 
     void windowMaximiseCallback(GLFWwindow *window, int m) {
@@ -955,8 +953,8 @@ namespace engine {
         using namespace std::chrono;
 
         //  update deltatime
-        deltatime = (std::chrono::high_resolution_clock::now() - last_frame).count() / 1000000000.;
-        last_frame = std::chrono::high_resolution_clock::now();
+        deltatime = glfwGetTime() - last_frame;
+        last_frame = glfwGetTime();
 
         //  flip buffers
         glfwSwapBuffers(gl::window);
@@ -1003,10 +1001,11 @@ namespace engine {
         #ifdef _MSG_DEBUG_ENABLED_FPS
         //  print debug fps data
         double temp_ticks = glfwGetTime();
+        avgTicksTotal += temp_ticks - frameTimeTicks;
         if(temp_ticks > ticks + 1.0) {
             std::stringstream d;
-            d << "Frame time: " << temp_ticks - frameTimeTicks << "ms | ";
-            d << "FPS: " << fps << " | Deltatime: " << deltatime;
+            d << "Avg Frame time: " << avgTicksTotal / fps << "ms | ";
+            d << "FPS: " << fps << " | Avg FPS: " << 1. / (avgTicksTotal / fps) << " | Deltatime: " << deltatime;
             if(!_vsync) {
                 d << " | Slept: " << slept << "ms | ";
                 d << "Spun: " << temp;
@@ -1015,6 +1014,7 @@ namespace engine {
             fps = 0u;
             ticks = temp_ticks;
             temp = 0u;
+            avgTicksTotal = 0.;
         }
         frameTimeTicks = temp_ticks;
         ++fps;
