@@ -5,10 +5,10 @@ int score, aya_frame;
 double launch_timer;
 
 float aya_x, aya_y, aya_y_speed;
-const float aya_x_speed = 1.f, aya_y_accel = -1.f, aya_jump = 3.f;
+const float aya_x_speed = 100.f, aya_y_accel = 900.f, aya_jump = -450.f;
 
 engine::SpriteSheet *aya, *bg_objects, *onbashira;
-std::queue<float> *pipe_x, *pipe_height;
+std::queue<float> *pillar_x, *pillar_height;
 
 
 int state = 0;
@@ -17,14 +17,14 @@ void logic_game() {
     if(state == 0) {
         //  menu
         launch_timer = 0.;
-        aya_x = 100.f;
-        aya_y = 60.f;
+        aya_x = 150.f;
+        aya_y = 528.f;
         aya_y_speed = 0.f;
         aya_frame = 0;
 
 
         if(engine::checkKey(engine::jump)) {
-            state == 1;
+            state = 1;
         }
 
     } else if(state == 1) {
@@ -33,15 +33,24 @@ void logic_game() {
         if(launch_timer < .750) {
             aya_frame = (int)(launch_timer / .125);
         } else {
+            aya_frame = 7;
+            aya_y_speed = -600.f;
             state = 2;
         }
     } else if(state == 2) {
         //  playing
-        
 
-        aya_x += aya_x_speed;
-        aya_y_speed += aya_y_accel;
-        aya_y += aya_y_speed;
+        if(engine::checkKeyPressed(engine::jump)) {
+            aya_y_speed = aya_jump;
+        }
+
+        aya_y_speed += aya_y_accel * engine::deltatime;
+        aya_y += aya_y_speed * engine::deltatime;
+
+
+
+        //  if collision with pillar
+        //  state 3
     } else if(state == 3) {
         //  end
     }
@@ -55,14 +64,21 @@ void logic_game() {
 
 void draw_game() {
     if(state == 0) {
-        aya->drawSpriteCentered(aya_frame, aya_x, aya_y, aya_y_speed);
+        aya->drawSpriteCentered(aya_frame, aya_x, aya_y, 0, 116, 256);
     } else if(state == 1) {
-
+        aya->drawSpriteCentered(aya_frame, aya_x, aya_y, 0, 116, 256);
+    } else if(state == 2) {
+        aya->drawSpriteCentered(aya_frame, aya_x, aya_y, (-aya_y_speed / 50), 184, 184);
     }
+
+    aya->buffer();
+    aya->draw();
+    
 }
 
 void load_game() {
-    engine::setDrawsize(960, 720);
+    state = 0;
+    aya_frame = 0;
     
 
     aya = new engine::SpriteSheet("./data/aya.png", 9);
@@ -83,6 +99,7 @@ void load_game() {
     onbashira->setSprite(1, 80, 0, 80, 180);
 
     engine::SetDrawmode(engine::DrawmodeSprite);
+    engine::setDrawsize(960, 720);
 
 
 
