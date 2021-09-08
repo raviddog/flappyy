@@ -26,6 +26,8 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     endif()
 endif()
 
+add_library(imgui STATIC  engine/imgui/imgui_impl_glfw.cpp engine/imgui/imgui_impl_opengl3.cpp engine/imgui/imgui.cpp engine/imgui/imgui_draw.cpp engine/imgui/imgui_widgets.cpp engine/imgui/imgui_tables.cpp)
+target_link_libraries(engine imgui)
 
 add_executable(flappyy source/main.cpp source/game.cpp)
 target_include_directories(flappyy PUBLIC .)

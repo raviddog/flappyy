@@ -8,6 +8,10 @@
 #include <fstream>
 #include <unordered_map>
 
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_glfw.h"
+#include "imgui/imgui_impl_opengl3.h"
+
 #ifdef _MSC_VER
 #define WIN32_LEAN_AND_MEAN
 #include "windows.h"
@@ -39,11 +43,11 @@ namespace engine {
     uint32_t fps;
     double ticks, frameTimeTicks, avgTicksTotal;
     std::chrono::high_resolution_clock::time_point cur_time, next_time;
-    
-    
     //  v this sucks v
     #define _ENGINE_FPS_CAP 60
     #define _ENGINE_NOVSYNC_DELAY_MICROSECONDS 1000000 / _ENGINE_FPS_CAP
+    
+    
 
     gl::Shader *shaderSpriteSheet, *shaderSpriteSheetInvert, *shaderUI, *pshader, *shader3d;
 
@@ -51,7 +55,7 @@ namespace engine {
 
     void windowMaximiseCallback(GLFWwindow*, int);
     void windowResizeCallback(GLFWwindow*, int, int);
-
+    void errorCallback(int, const char*);
 
 //  managed model loading stuff
     class ManagedModel {
@@ -761,7 +765,6 @@ namespace engine {
     //  2d init test
     void init(const char *title, int flags, int width, int height, int dwidth, int dheight) {
         debug_init();
-        //  i assume the only reason you'd use this one is if you wanted a fixed draw width/height
 
         /*
             flags contains a list of init flags
@@ -827,6 +830,7 @@ namespace engine {
         glfwSetKeyCallback(gl::window, key_callback);
         glfwSetWindowSizeCallback(gl::window, windowResizeCallback);
         glfwSetWindowMaximizeCallback(gl::window, windowMaximiseCallback);
+        glfwSetErrorCallback(errorCallback);
 
         aspect_w = drawWidth;
         aspect_h = drawHeight;
@@ -860,11 +864,25 @@ namespace engine {
         InitialiseDrawmodes(); 
         SetDrawmode(DrawmodeSprite);
 
+        int w, h;
+        glfwGetFramebufferSize(gl::window, &w, &h);
+        windowResizeCallback(gl::window, w, h);
+
         loadedModels = new std::unordered_map<std::string, ManagedModel*>();
 
         last_frame = glfwGetTime();
         deltatime = glfwGetTime() - last_frame;
         last_frame = glfwGetTime();
+
+
+        //  imgui
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+
+        ImGui::StyleColorsDark();
+
+        ImGui_ImplGlfw_InitForOpenGL(gl::window, true);
+        ImGui_ImplOpenGL3_Init("#version 330");
     }
 
     void windowMaximiseCallback(GLFWwindow *window, int m) {
@@ -951,17 +969,6 @@ namespace engine {
     void flip() {       
 
         using namespace std::chrono;
-
-        //  update deltatime
-        deltatime = glfwGetTime() - last_frame;
-        last_frame = glfwGetTime();
-
-        //  flip buffers
-        glfwSwapBuffers(gl::window);
-
-        //  clear new buffer
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
         #ifdef _MSG_DEBUG_ENABLED_FPS
         uint32_t slept;
         #endif
@@ -1000,17 +1007,34 @@ namespace engine {
 
         #ifdef _MSG_DEBUG_ENABLED_FPS
         //  print debug fps data
+            
+        static std::stringstream d;
+        
+        
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        ImGui::Begin("Performance");
+        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+        ImGui::Text(d.str().c_str());
+        ImGui::End();
+        ImGui::Render();
+
+        setViewport();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
         double temp_ticks = glfwGetTime();
         avgTicksTotal += temp_ticks - frameTimeTicks;
         if(temp_ticks > ticks + 1.0) {
-            std::stringstream d;
+            d.str("");
             d << "Avg Frame time: " << avgTicksTotal / fps << "ms | ";
             d << "FPS: " << fps << " | Avg FPS: " << 1. / (avgTicksTotal / fps) << " | Deltatime: " << deltatime;
             if(!_vsync) {
                 d << " | Slept: " << slept << "ms | ";
                 d << "Spun: " << temp;
             }
-            glfwSetWindowTitle(gl::window, d.str().c_str());
+            // glfwSetWindowTitle(gl::window, d.str().c_str());
             fps = 0u;
             ticks = temp_ticks;
             temp = 0u;
@@ -1020,10 +1044,25 @@ namespace engine {
         ++fps;
         #endif
 
-        
+
+
+
+        //  update deltatime
+        deltatime = glfwGetTime() - last_frame;
+        last_frame = glfwGetTime();
+
+        //  flip buffers
+        glfwSwapBuffers(gl::window);
+
+        //  clear new buffer
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+   
     }
 
     void close() {
+        ImGui_ImplOpenGL3_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext();
         #ifdef _MSC_VER
         if(!_vsync) timeEndPeriod(1);
         #endif
@@ -1072,6 +1111,10 @@ namespace engine {
 
     void mouseRelease() {
         glfwSetInputMode(gl::window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
+
+    void errorCallback(int error, const char *description) {
+        log_debug("Error %d: %s\n", error, description);
     }
 
 }
