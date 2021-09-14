@@ -24,6 +24,10 @@
 
 #include "OBJ_Loader.h"
 
+#if defined(DEBUG) || defined(_DEBUG)
+#define _useimgui
+#endif
+
 namespace engine {
     Camera3D *Camera3D::bound = nullptr;
 
@@ -46,6 +50,16 @@ namespace engine {
     //  v this sucks v
     #define _ENGINE_FPS_CAP 60
     #define _ENGINE_NOVSYNC_DELAY_MICROSECONDS 1000000 / _ENGINE_FPS_CAP
+    
+    //  imgui stuff
+    //  store type, pointer to value
+    struct imgui_t{
+        std::string text;
+        bool edit;
+        int type;
+        void *value;
+    };
+    std::vector<std::pair<std::string, std::vector<imgui_t>*>> *imgui_windows = nullptr;
     
     
 
@@ -876,6 +890,7 @@ namespace engine {
 
 
         //  imgui
+        #ifdef _useimgui
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
 
@@ -883,6 +898,9 @@ namespace engine {
 
         ImGui_ImplGlfw_InitForOpenGL(gl::window, true);
         ImGui_ImplOpenGL3_Init("#version 330");
+
+        imgui_windows = new std::vector<std::pair<std::string, std::vector<imgui_t>*>>();
+        #endif
     }
 
     void windowMaximiseCallback(GLFWwindow *window, int m) {
@@ -1010,19 +1028,54 @@ namespace engine {
             
         static std::stringstream d;
         
-        
+        #ifdef _useimgui
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
+
+        for(int i = 0; i < imgui_windows->size(); i++) {
+            ImGui::Begin(imgui_windows->at(i).first.c_str());
+            for(int j = 0; j < imgui_windows->at(i).second->size(); j++) {
+                imgui_t temp = imgui_windows->at(i).second->at(j);
+                if(temp.type == 1) {
+                    //  float
+                    ImGui::Text(temp.text.c_str());
+                    if(temp.edit) {
+                        ImGui::InputFloat("##value", (float*)temp.value, 1.0f);
+                    } else {
+                        ImGui::Text("%f", *(float*)temp.value);
+                    }
+                } else if(temp.type == 2) {
+                    //  int
+                    ImGui::Text(temp.text.c_str());
+                    if(temp.edit) {
+                        ImGui::InputInt("##value", (int*)temp.value, 1.0f);
+                    } else {
+                        ImGui::Text("%d", *(int*)temp.value);
+                    }
+                } else if(temp.type == 3) {
+                    //  bool
+                    ImGui::Text(temp.text.c_str());
+                    if(temp.value) {
+                        ImGui::Text(" True");
+                    } else {
+                        ImGui::Text(" False");
+                    }
+                }
+            }
+            ImGui::End();
+        }
 
         ImGui::Begin("Performance");
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
         ImGui::Text(d.str().c_str());
         ImGui::End();
-        ImGui::Render();
 
+        ImGui::Render();
         setViewport();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+        #endif
 
         double temp_ticks = glfwGetTime();
         avgTicksTotal += temp_ticks - frameTimeTicks;
@@ -1060,9 +1113,11 @@ namespace engine {
     }
 
     void close() {
+        #ifdef _useimgui
         ImGui_ImplOpenGL3_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
+        #endif
         #ifdef _MSC_VER
         if(!_vsync) timeEndPeriod(1);
         #endif
@@ -1117,4 +1172,101 @@ namespace engine {
         log_debug("Error %d: %s\n", error, description);
     }
 
+    void registerDebugVariable(std::string text, float *val, bool edit) {
+        #ifdef _useimgui
+        imgui_t icon;
+        icon.text = text;
+        icon.type = 1;
+        icon.value = (void*)val;
+        icon.edit = edit;
+        if(imgui_windows) {
+            if(imgui_windows->size() > 0) {
+                imgui_windows->at(0).second->push_back(icon);
+            }
+        }
+        #endif
+    }
+
+    void registerDebugVariable(std::string text, float *val, bool edit, int window) {
+        #ifdef _useimgui
+        imgui_t icon;
+        icon.text = text;
+        icon.type = 1;
+        icon.value = (void*)val;
+        icon.edit = edit;
+        if(window < imgui_windows->size()) {
+            if(imgui_windows->size() > window) {
+                imgui_windows->at(window).second->push_back(icon);
+            }
+        }
+        #endif
+    }
+
+    void registerDebugVariable(std::string text, int *val, bool edit) {
+        #ifdef _useimgui
+        imgui_t icon;
+        icon.text = text;
+        icon.type = 2;
+        icon.value = (void*)val;
+        icon.edit = edit;
+        if(imgui_windows) {
+            if(imgui_windows->size() > 0) {
+                imgui_windows->at(0).second->push_back(icon);
+            }
+        }
+        #endif
+    }
+
+    void registerDebugVariable(std::string text, int *val, bool edit, int window) {
+        #ifdef _useimgui
+        imgui_t icon;
+        icon.text = text;
+        icon.type = 2;
+        icon.value = (void*)val;
+        icon.edit = edit;
+        if(imgui_windows) {
+            if(imgui_windows->size() > window) {
+                imgui_windows->at(window).second->push_back(icon);
+            }
+        }
+        #endif
+    }
+
+    void registerDebugVariable(std::string text, bool *val, bool edit) {
+        #ifdef _useimgui
+        imgui_t icon;
+        icon.text = text;
+        icon.type = 3;
+        icon.value = (bool*)val;
+        icon.edit = edit;
+        if(imgui_windows) {
+            if(imgui_windows->size() > 0) {
+                imgui_windows->at(0).second->push_back(icon);
+            }
+        }
+        #endif
+    }
+
+    void registerDebugVariable(std::string text, bool *val, bool edit, int window) {
+        #ifdef _useimgui
+        imgui_t icon;
+        icon.text = text;
+        icon.type = 3;
+        icon.value = (bool*)val;
+        icon.edit = edit;
+        if(imgui_windows) {
+            if(imgui_windows->size() > window) {
+                imgui_windows->at(window).second->push_back(icon);
+            }
+        }
+        #endif
+    }
+
+    void registerDebugWindow(std::string text) {
+        #ifdef _useimgui
+        std::vector<imgui_t> *v = new std::vector<imgui_t>();
+        std::pair<std::string, std::vector<imgui_t>*> t = std::make_pair(text, v);
+        imgui_windows->push_back(t);
+        #endif
+    }
 }

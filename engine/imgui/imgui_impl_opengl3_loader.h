@@ -32,7 +32,7 @@
 // see https://github.com/dearimgui/gl3w_stripped for more info.
 #ifndef __gl3w_h_
 #define __gl3w_h_
-
+#if defined(DEBUG) || defined(_DEBUG)
 // Adapted from KHR/khrplatform.h to avoid including entire file.
 typedef          float         khronos_float_t;
 typedef signed   char          khronos_int8_t;
@@ -726,5 +726,6 @@ static void load_procs(GL3WGetProcAddressProc proc)
 
 #ifdef __cplusplus
 }
+#endif
 #endif
 #endif

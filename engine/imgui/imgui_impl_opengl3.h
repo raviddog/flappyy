@@ -19,7 +19,7 @@
 
 #pragma once
 #include "imgui.h"      // IMGUI_IMPL_API
-
+#if defined(DEBUG) || defined(_DEBUG)
 // Backend API
 IMGUI_IMPL_API bool     ImGui_ImplOpenGL3_Init(const char* glsl_version = NULL);
 IMGUI_IMPL_API void     ImGui_ImplOpenGL3_Shutdown();
@@ -52,4 +52,5 @@ IMGUI_IMPL_API void     ImGui_ImplOpenGL3_DestroyDeviceObjects();
 // Otherwise imgui_impl_opengl3_loader.h will be used.
 #endif
 
+#endif
 #endif

@@ -43,7 +43,7 @@
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
-
+#if defined(DEBUG) || defined(_DEBUG)
 // GLFW
 #include <GLFW/glfw3.h>
 #ifdef _WIN32
@@ -451,3 +451,4 @@ void ImGui_ImplGlfw_NewFrame()
     // Update game controllers (if enabled and available)
     ImGui_ImplGlfw_UpdateGamepads();
 }
+#endif

@@ -59,6 +59,16 @@ namespace engine {
     void mouseCapture();
     void mouseRelease();
 
+    //  imgui stuff
+    //  accompanying text, pointer to variable, editable, window
+    void registerDebugWindow(std::string);
+    void registerDebugVariable(std::string, float*, bool);
+    void registerDebugVariable(std::string, float*, bool, int);
+    void registerDebugVariable(std::string, int*, bool);
+    void registerDebugVariable(std::string, int*, bool, int);
+    void registerDebugVariable(std::string, bool*, bool);
+    void registerDebugVariable(std::string, bool*, bool, int);
+
     // void InitialiseDrawmodes();
     void SetDrawmode(Drawmode dmode);
 
