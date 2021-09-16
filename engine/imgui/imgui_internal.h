@@ -36,7 +36,7 @@ Index of this file:
 */
 
 #pragma once
-#ifndef IMGUI_DISABLE
+#if defined(DEBUG) || defined(_DEBUG)
 
 //-----------------------------------------------------------------------------
 // [SECTION] Header mess

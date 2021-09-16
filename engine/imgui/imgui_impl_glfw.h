@@ -20,7 +20,7 @@
 #pragma once
 #include "imgui.h"      // IMGUI_IMPL_API
 
-#if defined(DEBUG) || defined(_DEBUG)
+#ifndef IMGUI_DISABLE
 struct GLFWwindow;
 struct GLFWmonitor;
 

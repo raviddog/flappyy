@@ -24,10 +24,6 @@
 
 #include "OBJ_Loader.h"
 
-#if defined(DEBUG) || defined(_DEBUG)
-#define _useimgui
-#endif
-
 namespace engine {
     Camera3D *Camera3D::bound = nullptr;
 
@@ -1028,7 +1024,7 @@ namespace engine {
             
         static std::stringstream d;
         
-        #ifdef _useimgui
+        #ifndef IMGUI_DISABLE
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
@@ -1040,6 +1036,7 @@ namespace engine {
                 if(temp.type == 1) {
                     //  float
                     ImGui::Text(temp.text.c_str());
+                    ImGui::SameLine();
                     if(temp.edit) {
                         ImGui::InputFloat("##value", (float*)temp.value, 1.0f);
                     } else {
@@ -1048,6 +1045,7 @@ namespace engine {
                 } else if(temp.type == 2) {
                     //  int
                     ImGui::Text(temp.text.c_str());
+                    ImGui::SameLine();
                     if(temp.edit) {
                         ImGui::InputInt("##value", (int*)temp.value, 1.0f);
                     } else {
@@ -1056,6 +1054,7 @@ namespace engine {
                 } else if(temp.type == 3) {
                     //  bool
                     ImGui::Text(temp.text.c_str());
+                    ImGui::SameLine();
                     if(temp.value) {
                         ImGui::Text(" True");
                     } else {

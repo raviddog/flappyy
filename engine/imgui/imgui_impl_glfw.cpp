@@ -43,7 +43,7 @@
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
-#if defined(DEBUG) || defined(_DEBUG)
+#ifndef IMGUI_DISABLE
 // GLFW
 #include <GLFW/glfw3.h>
 #ifdef _WIN32
