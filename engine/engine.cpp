@@ -8,9 +8,9 @@
 #include <fstream>
 #include <unordered_map>
 
-#include "imgui/imgui.h"
-#include "imgui/imgui_impl_glfw.h"
-#include "imgui/imgui_impl_opengl3.h"
+#include "libs/imgui/imgui.h"
+#include "libs/imgui/imgui_impl_glfw.h"
+#include "libs/imgui/imgui_impl_opengl3.h"
 
 #ifdef _MSC_VER
 #define WIN32_LEAN_AND_MEAN
@@ -694,8 +694,7 @@ namespace engine {
         *y = *y / d;
     }
 
-    //  load settings from file
-    //  TODO FIX FOR SUZUNAAN IDC FOR FLAPPYY
+    //  load settings from ini file
     bool init(const char *title, int flags, int width, int height, int dwidth, int dheight, const char *settingsPath) {
         debug_init();
 
@@ -706,9 +705,9 @@ namespace engine {
             "Jump"
         };
 
-        std::ifstream file;//(settingsPath, std::ifstream::in);
+        std::ifstream file;
         std::string settings;
-        //file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+        bool readstate = false;;
 
         try {
             file.open(settingsPath);
@@ -716,54 +715,60 @@ namespace engine {
             filestream << file.rdbuf();
             file.close();
             settings = filestream.str();
+            readstate = true;
         } catch(std::ifstream::failure &ex) {
-            engine::log_debug("failed to open file, %s\n%s",  strerror(errno), ex.what());
+            engine::log_debug("failed to open settings file, %s\n%s",  strerror(errno), ex.what());
             file.close();
-            return false;
+            // return false;
+            readstate = false;
         }
-        //  settings
+        //  default settings
+        //  really gotta put these somewhere else
         bool vsync = true;
-        int width_win = 640, height_win = 480;
-        const int width_draw = 640, height_draw = 480;  //  modify for non-static resolution shmup stuff
 
 
-        size_t next = 0, offset = 0, length;
-        length = settings.length();
+        if(readstate) {
+            size_t next = 0, offset = 0, length;
+            length = settings.length();
 
-
-        while(next < length) {
-            if(settings[next] == '[' || settings[next] == ';') {
-                while(next < length && settings[next] != '\n') {
+            while(next < length) {
+                if(settings[next] == '[' || settings[next] == ';') {
+                    while(next < length && settings[next] != '\n') {
+                        next++;
+                    }
+                }
+                if(settings[next] == '\n') {
                     next++;
-                }
-            }
-            if(settings[next] == '\n') {
-                next++;
-            } else {
-                offset = 0;
-                while(next + offset < length && settings[next + offset] != '=') {
-                    offset++;
-                }
-                std::string id = settings.substr(next, offset);
-                next += offset + 1;
-                offset = 0;
+                } else {
+                    offset = 0;
+                    while(next + offset < length && settings[next + offset] != '=') {
+                        offset++;
+                    }
+                    std::string id = settings.substr(next, offset);
+                    next += offset + 1;
+                    offset = 0;
 
-                while(next + offset < length && settings[next + offset] != '\n') {
-                    offset++;
-                }
-                std::string value = settings.substr(next, offset);
-                next += offset + 1;
-                offset = 0;
+                    while(next + offset < length && settings[next + offset] != '\n') {
+                        offset++;
+                    }
+                    std::string value = settings.substr(next, offset);
+                    next += offset + 1;
+                    offset = 0;
 
-                if(id == "Vsync") {
-                    vsync = value == "true" ? true : false;
-                } else if(id == "Screenmode") {
+                    if(id == "Vsync") {
+                        vsync = value == "true" ? true : false;
+                    }
 
                 }
 
             }
-
         }
+
+        if(vsync) {
+            flags = flags | ENGINE_INIT_VSYNC;
+        }
+
+
         init(title, flags, width, height, dwidth, dheight);
         return true;
     }
@@ -886,7 +891,7 @@ namespace engine {
 
 
         //  imgui
-        #ifdef _useimgui
+        #ifndef IMGUI_DISABLE
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
 
@@ -1112,7 +1117,7 @@ namespace engine {
     }
 
     void close() {
-        #ifdef _useimgui
+        #ifndef IMGUI_DISABLE
         ImGui_ImplOpenGL3_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
@@ -1172,7 +1177,7 @@ namespace engine {
     }
 
     void registerDebugVariable(std::string text, float *val, bool edit) {
-        #ifdef _useimgui
+        #ifndef IMGUI_DISABLE
         imgui_t icon;
         icon.text = text;
         icon.type = 1;
@@ -1187,7 +1192,7 @@ namespace engine {
     }
 
     void registerDebugVariable(std::string text, float *val, bool edit, int window) {
-        #ifdef _useimgui
+        #ifndef IMGUI_DISABLE
         imgui_t icon;
         icon.text = text;
         icon.type = 1;
@@ -1202,7 +1207,7 @@ namespace engine {
     }
 
     void registerDebugVariable(std::string text, int *val, bool edit) {
-        #ifdef _useimgui
+        #ifndef IMGUI_DISABLE
         imgui_t icon;
         icon.text = text;
         icon.type = 2;
@@ -1217,7 +1222,7 @@ namespace engine {
     }
 
     void registerDebugVariable(std::string text, int *val, bool edit, int window) {
-        #ifdef _useimgui
+        #ifndef IMGUI_DISABLE
         imgui_t icon;
         icon.text = text;
         icon.type = 2;
@@ -1232,7 +1237,7 @@ namespace engine {
     }
 
     void registerDebugVariable(std::string text, bool *val, bool edit) {
-        #ifdef _useimgui
+        #ifndef IMGUI_DISABLE
         imgui_t icon;
         icon.text = text;
         icon.type = 3;
@@ -1247,7 +1252,7 @@ namespace engine {
     }
 
     void registerDebugVariable(std::string text, bool *val, bool edit, int window) {
-        #ifdef _useimgui
+        #ifndef IMGUI_DISABLE
         imgui_t icon;
         icon.text = text;
         icon.type = 3;
@@ -1262,7 +1267,7 @@ namespace engine {
     }
 
     void registerDebugWindow(std::string text) {
-        #ifdef _useimgui
+        #ifndef IMGUI_DISABLE
         std::vector<imgui_t> *v = new std::vector<imgui_t>();
         std::pair<std::string, std::vector<imgui_t>*> t = std::make_pair(text, v);
         imgui_windows->push_back(t);

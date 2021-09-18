@@ -7,7 +7,7 @@ set(IN_RES_DIR ./res)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ./bin)
 
-add_library(engine STATIC engine/engine_gl.cpp engine/engine.cpp engine/glad.c engine/stb_image.cpp engine/debug.cpp)
+add_library(engine STATIC engine/engine_gl.cpp engine/engine.cpp engine/glad.c engine/libs/stb_image.cpp engine/debug.cpp)
 target_include_directories(engine PUBLIC ./engine)
 set_property(TARGET engine PROPERTY CXX_STANDARD 17)
 set_property(TARGET engine PROPERTY CXX_STANDARD_REQUIRED ON)
@@ -26,7 +26,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     endif()
 endif()
 
-add_library(imgui STATIC  engine/imgui/imgui_impl_glfw.cpp engine/imgui/imgui_impl_opengl3.cpp engine/imgui/imgui.cpp engine/imgui/imgui_draw.cpp engine/imgui/imgui_widgets.cpp engine/imgui/imgui_tables.cpp)
+add_library(imgui STATIC  engine/libs/imgui/imgui_impl_glfw.cpp engine/libs/imgui/imgui_impl_opengl3.cpp engine/libs/imgui/imgui.cpp engine/libs/imgui/imgui_draw.cpp engine/libs/imgui/imgui_widgets.cpp engine/libs/imgui/imgui_tables.cpp)
 target_link_libraries(engine imgui)
 
 add_executable(flappyy source/main.cpp source/game.cpp)
