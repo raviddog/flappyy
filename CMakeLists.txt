@@ -7,30 +7,10 @@ set(IN_RES_DIR ./res)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ./bin)
 
-add_library(engine STATIC engine/engine_gl.cpp engine/engine.cpp engine/glad.c engine/libs/stb_image.cpp engine/debug.cpp engine/libs/ini.cpp)
-target_include_directories(engine PUBLIC ./engine)
-set_property(TARGET engine PROPERTY CXX_STANDARD 17)
-set_property(TARGET engine PROPERTY CXX_STANDARD_REQUIRED ON)
-if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    target_include_directories(engine PUBLIC    "C:/Program Files (x86)/Windows Kits/10/Include/10.0.18362.0/um"
-                                                "C:/Program Files (x86)/Windows Kits/10/Include/10.0.18362.0/shared"
-                                                "C:/Program Files (x86)/Windows Kits/10/Lib/10.0.18362.0/um/x64")
-    target_link_libraries(engine winmm.lib)
-endif()
-if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    if(UNIX)
-        target_link_libraries(engine -lglfw)
-    endif()
-    if(WIN32)
-        target_link_libraries(engine -lmingw32 -lglfw3)
-    endif()
-endif()
-
-add_library(imgui STATIC  engine/libs/imgui/imgui_impl_glfw.cpp engine/libs/imgui/imgui_impl_opengl3.cpp engine/libs/imgui/imgui.cpp engine/libs/imgui/imgui_draw.cpp engine/libs/imgui/imgui_widgets.cpp engine/libs/imgui/imgui_tables.cpp)
-target_link_libraries(engine imgui)
+add_subdirectory(engine)
 
 add_executable(flappyy source/main.cpp source/game.cpp)
-target_include_directories(flappyy PUBLIC .)
+target_include_directories(flappyy PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(flappyy engine)
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     if(WIN32)
