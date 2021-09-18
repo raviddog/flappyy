@@ -99,20 +99,8 @@ void logic_game() {
             ph = pillar_height->at(score + 2);
         }
 
-        if(px < aya_x + aya_rad + 48) {
-            if(px > aya_x + aya_rad - 60) {
-                if(aya_y > ph + aya_rad + 48) {
-                    //  hit
-                    collision = true;
-                } else if(aya_y < ph - aya_rad - 48) {
-                    //  hit
-                    collision = true;
-                }
-            }
-        }
-
-
-
+        collision = collisionSqsq(aya_x, aya_y, aya_rad, aya_rad, px + 2.f, ph - 376.f, 108.f, 480.f);
+        collision = collision | collisionSqsq(aya_x, aya_y, aya_rad, aya_rad, px + 2.f, ph + 376.f, 108.f, 480.f);
 
 
 

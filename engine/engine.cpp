@@ -1035,7 +1035,7 @@ namespace engine {
                     //  bool
                     ImGui::Text(temp.text.c_str());
                     ImGui::SameLine();
-                    if(temp.value) {
+                    if(*(bool*)temp.value) {
                         ImGui::Text(" True");
                     } else {
                         ImGui::Text(" False");

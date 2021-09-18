@@ -3,6 +3,7 @@
 
 #include "engine_gl.hpp"
 #include "engine_helper.hpp"
+#include "util.h"
 
 #include <vector>
 #include <memory>
