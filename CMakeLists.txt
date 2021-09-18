@@ -7,7 +7,7 @@ set(IN_RES_DIR ./res)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ./bin)
 
-add_library(engine STATIC engine/engine_gl.cpp engine/engine.cpp engine/glad.c engine/libs/stb_image.cpp engine/debug.cpp)
+add_library(engine STATIC engine/engine_gl.cpp engine/engine.cpp engine/glad.c engine/libs/stb_image.cpp engine/debug.cpp engine/libs/ini.cpp)
 target_include_directories(engine PUBLIC ./engine)
 set_property(TARGET engine PROPERTY CXX_STANDARD 17)
 set_property(TARGET engine PROPERTY CXX_STANDARD_REQUIRED ON)

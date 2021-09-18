@@ -12,6 +12,8 @@
 #include "libs/imgui/imgui_impl_glfw.h"
 #include "libs/imgui/imgui_impl_opengl3.h"
 
+#include "libs/ini.h"
+
 #ifdef _MSC_VER
 #define WIN32_LEAN_AND_MEAN
 #include "windows.h"
@@ -695,7 +697,7 @@ namespace engine {
     }
 
     //  load settings from ini file
-    bool init(const char *title, int flags, int width, int height, int dwidth, int dheight, const char *settingsPath) {
+    bool init(const char *title, int flags, int width, int height, const char *settingsPath) {
         debug_init();
 
         //  default controls if there's none in config
@@ -707,7 +709,7 @@ namespace engine {
 
         std::ifstream file;
         std::string settings;
-        bool readstate = false;;
+        bool readstate = false;
 
         try {
             file.open(settingsPath);
@@ -728,48 +730,21 @@ namespace engine {
 
 
         if(readstate) {
-            size_t next = 0, offset = 0, length;
-            length = settings.length();
-
-            while(next < length) {
-                if(settings[next] == '[' || settings[next] == ';') {
-                    while(next < length && settings[next] != '\n') {
-                        next++;
-                    }
-                }
-                if(settings[next] == '\n') {
-                    next++;
-                } else {
-                    offset = 0;
-                    while(next + offset < length && settings[next + offset] != '=') {
-                        offset++;
-                    }
-                    std::string id = settings.substr(next, offset);
-                    next += offset + 1;
-                    offset = 0;
-
-                    while(next + offset < length && settings[next + offset] != '\n') {
-                        offset++;
-                    }
-                    std::string value = settings.substr(next, offset);
-                    next += offset + 1;
-                    offset = 0;
-
-                    if(id == "Vsync") {
-                        vsync = value == "true" ? true : false;
-                    }
-
-                }
-
-            }
+            ini_t *ini = ini_load(settings.c_str(), NULL);
+            int vsync_i = ini_find_property(ini, INI_GLOBAL_SECTION, "vsync", 0);
+            std::string vsync_t = ini_property_value(ini, INI_GLOBAL_SECTION, vsync_i);
+            
+            vsync = vsync_t == "true";
         }
+
+        //  else use defaults
 
         if(vsync) {
             flags = flags | ENGINE_INIT_VSYNC;
         }
 
 
-        init(title, flags, width, height, dwidth, dheight);
+        init(title, flags, width, height);
         return true;
     }
 

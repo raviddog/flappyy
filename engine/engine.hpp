@@ -45,7 +45,7 @@ namespace engine {
     bool checkKey(int key);
     bool checkKeyPressed(int key);
 
-    // bool init(const char *title, const char *settingsPath);
+    bool init(const char *title, int flags, int width, int height, const char *settingsPath);
     void init(const char *title, int flags, int width, int height);
     void init(const char *title, int flags, int width, int height, int dwidth, int dheight);
     void inputs();
