@@ -1034,9 +1034,9 @@ namespace engine {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        for(int i = 0; i < imgui_windows->size(); i++) {
+        for(size_t i = 0; i < imgui_windows->size(); i++) {
             ImGui::Begin(imgui_windows->at(i).first.c_str());
-            for(int j = 0; j < imgui_windows->at(i).second->size(); j++) {
+            for(size_t j = 0; j < imgui_windows->at(i).second->size(); j++) {
                 imgui_t temp = imgui_windows->at(i).second->at(j);
                 if(temp.type == 1) {
                     //  float
@@ -1191,7 +1191,7 @@ namespace engine {
         #endif
     }
 
-    void registerDebugVariable(std::string text, float *val, bool edit, int window) {
+    void registerDebugVariable(std::string text, float *val, bool edit, size_t window) {
         #ifndef IMGUI_DISABLE
         imgui_t icon;
         icon.text = text;
@@ -1221,7 +1221,7 @@ namespace engine {
         #endif
     }
 
-    void registerDebugVariable(std::string text, int *val, bool edit, int window) {
+    void registerDebugVariable(std::string text, int *val, bool edit, size_t window) {
         #ifndef IMGUI_DISABLE
         imgui_t icon;
         icon.text = text;
@@ -1251,7 +1251,7 @@ namespace engine {
         #endif
     }
 
-    void registerDebugVariable(std::string text, bool *val, bool edit, int window) {
+    void registerDebugVariable(std::string text, bool *val, bool edit, size_t window) {
         #ifndef IMGUI_DISABLE
         imgui_t icon;
         icon.text = text;

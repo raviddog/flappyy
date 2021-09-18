@@ -63,11 +63,11 @@ namespace engine {
     //  accompanying text, pointer to variable, editable, window
     void registerDebugWindow(std::string);
     void registerDebugVariable(std::string, float*, bool);
-    void registerDebugVariable(std::string, float*, bool, int);
+    void registerDebugVariable(std::string, float*, bool, size_t);
     void registerDebugVariable(std::string, int*, bool);
-    void registerDebugVariable(std::string, int*, bool, int);
+    void registerDebugVariable(std::string, int*, bool, size_t);
     void registerDebugVariable(std::string, bool*, bool);
-    void registerDebugVariable(std::string, bool*, bool, int);
+    void registerDebugVariable(std::string, bool*, bool, size_t);
 
     // void InitialiseDrawmodes();
     void SetDrawmode(Drawmode dmode);
