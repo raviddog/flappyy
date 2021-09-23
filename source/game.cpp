@@ -13,6 +13,8 @@ const float aya_x_speed = 480.f, aya_y_accel = 1800.f, aya_jump = -600.f, aya_ra
 engine::SpriteSheet *aya, *bg, *onbashira;
 std::vector<float> *pillar_height;
 
+engine::BitmapFont *font;
+
 
 int state = 0;
 
@@ -108,15 +110,18 @@ void logic_game() {
 
 
 
-        if(aya_y > 860.f) {
-            aya_y = 860.f;
+        if(aya_y > 760.f) {
+            aya_y = 760.f;
             aya_y_speed = 0.f;
+            // state = 3;
+        }
+        if(collision) {
             // state = 3;
         }
         //  state 3
     } else if(state == 3) {
         //  end
-        pillar_height->empty();
+        // pillar_height->empty();
     }
 
 
@@ -146,6 +151,15 @@ void draw_game() {
         }
         onbashira->buffer();
         onbashira->draw();
+
+        char* c = new char[4];
+        snprintf(c, 4, "%d", score);
+
+        font->WriteCentered(c, 480.f, 180.f, 80);
+        font->buffer();
+        font->draw();
+
+
     } else if(state == 3) {
         aya->drawSpriteCentered(aya_frame, aya_x, aya_y, (-aya_y_speed / 50), 184, 184);
     }
@@ -191,6 +205,8 @@ void load_game() {
     engine::setDrawsize(960, 720);
 
     pillar_height = new std::vector<float>();
+
+    font = new engine::BitmapFont("./data/8x10b.png");
 
 
     // bg_objects = new engine::SpriteSheet("./data/bg.png", 4);

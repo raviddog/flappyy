@@ -59,7 +59,7 @@ namespace engine {
     };
     std::vector<std::pair<std::string, std::vector<imgui_t>*>> *imgui_windows = nullptr;
     
-    
+
 
     gl::Shader *shaderSpriteSheet, *shaderSpriteSheetInvert, *shaderUI, *pshader, *shader3d;
 
@@ -68,6 +68,162 @@ namespace engine {
     void windowMaximiseCallback(GLFWwindow*, int);
     void windowResizeCallback(GLFWwindow*, int, int);
     void errorCallback(int, const char*);
+
+    int gcd(int a, int b) {
+        return b ? gcd(b, a % b) : a;
+    }
+
+    void aspectRatio(int *x, int *y) {
+        int d = gcd(*x, *y);
+        *x = *x / d;
+        *y = *y / d;
+    }
+
+    void aspectRatio(float *x, float *y) {
+        float d = gcd(*x, *y);
+        *x = *x / d;
+        *y = *y / d;
+    }
+
+    //  text
+    BitmapFont::BitmapFont(std::string path) {
+        //  NOTE assume ascii only for now
+        //  ascii is 16x8
+        s = new SpriteSheet(path, 128);
+
+        gl::Texture *t = s->tex;
+        charinfo.w = t->srcWidth / 16;
+        charinfo.h = t->srcHeight / 8;
+
+        for(size_t i = 0; i < 128; i++) {
+            int x = i % 16 * charinfo.w;
+            int y = i / 16 * charinfo.h;
+            s->setSprite(i, x, y, charinfo.w, charinfo.h);
+        }
+        
+        
+
+    }
+
+    void BitmapFont::Dimensions(std::string text, int *w, int *h) {
+        int lines = 0;
+        int maxwidth = 0;
+        int cwidth = 0;
+        for(size_t i = 0; i < text.length(); i++) {
+            if(text.at(i) == '\n') {
+                lines++;
+                cwidth = 0;
+            } else {
+                cwidth++;
+                if(cwidth > maxwidth) {
+                    maxwidth = cwidth;
+                }
+            }
+        }
+
+        *w = maxwidth * charinfo.w;
+        *h = lines * charinfo.h;
+    }
+
+    void BitmapFont::Dimensions(std::string text, int *w, int *h, int *s) {
+        int lines = 0;
+        int maxwidth = 0;
+        int cwidth = 0;
+        for(size_t i = 0; i < text.length(); i++) {
+            if(text.at(i) == '\n') {
+                lines++;
+                cwidth = 0;
+            } else {
+                cwidth++;
+                if(cwidth > maxwidth) {
+                    maxwidth = cwidth;
+                }
+            }
+        }
+
+        *w = maxwidth * *s;
+        *h = lines * (*s / charinfo.w) * charinfo.h;
+    }
+
+    void BitmapFont::Write(std::string text, float x, float y) {
+        int line = 0;
+        int c = 0;
+
+        for(size_t i = 0; i < text.length(); i++) {
+            if(text.at(i) == '\n') {
+                line++;
+                c = 0;
+            } else {
+                s->drawSprite((int)text.at(i), x + c * charinfo.w, y + line * charinfo.h);
+                c++;
+            }
+        }
+    }
+
+    void BitmapFont::WriteCentered(std::string text, float x, float y) {
+        int w, h;
+        Dimensions(text, &w, &h);
+
+        x -= w / 2;
+        y -= h / 2;
+
+        int line = 0;
+        int c = 0;
+
+        for(size_t i = 0; i < text.length(); i++) {
+            if(text.at(i) == '\n') {
+                line++;
+                c = 0;
+            } else {
+                s->drawSprite((int)text.at(i), x + c * charinfo.w, y + line * charinfo.h);
+                c++;
+            }
+        }
+    }
+
+    void BitmapFont::Write(std::string text, float x, float y, int w) {
+        int line = 0;
+        int c = 0;
+
+        for(size_t i = 0; i < text.length(); i++) {
+            if(text.at(i) == '\n') {
+                line++;
+                c = 0;
+            } else {
+                s->drawSprite((int)text.at(i), x + c * w, y + line * charinfo.h * (w / charinfo.w), 0.f, w, charinfo.h * (w / charinfo.w));
+                c++;
+            }
+        }
+    }
+
+    void BitmapFont::WriteCentered(std::string text, float x, float y, int w) {
+        int wx, h;
+        Dimensions(text, &wx, &h, &w);
+
+        x -= wx / 2;
+        y -= h / 2;
+
+        int line = 0;
+        int c = 0;
+
+        for(size_t i = 0; i < text.length(); i++) {
+            if(text.at(i) == '\n') {
+                line++;
+                c = 0;
+            } else {
+                s->drawSprite((int)text.at(i), x + c * w, y + line * charinfo.h * (w / charinfo.w), 0.f, w, charinfo.h * (w / charinfo.w));
+                c++;
+            }
+        }
+    }
+
+    void BitmapFont::buffer() {
+        s->buffer();
+    }
+
+    void BitmapFont::draw() {
+        s->draw();
+    }
 
 //  managed model loading stuff
     class ManagedModel {
@@ -683,17 +839,6 @@ namespace engine {
 
     void ModelInstance::bind() {
         shader3d->setMat4("model", modelmat);
-    }
-
-    int gcd(int, int);
-    int gcd(int a, int b) {
-        return b ? gcd(b, a % b) : a;
-    }
-
-    void aspectRatio(int *x, int *y) {
-        int d = gcd(*x, *y);
-        *x = *x / d;
-        *y = *y / d;
     }
 
     //  load settings from ini file

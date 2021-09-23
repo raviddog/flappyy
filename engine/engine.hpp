@@ -170,12 +170,13 @@ namespace engine {
             Sprite *sprites;
             gl::VAO *vao;
             gl::VBO *vbo;
-            gl::Texture *tex;
             bool realloc;
 
-            void load(const std::string &path, int nummSprites);
+            void load(const std::string &path, int numSprites);
             void load(const std::string &path, int numSprites, size_t maxDraws);
         public:
+        //  TODO this is here coz of font, seems wrong, clean up later
+            gl::Texture *tex;
             int numSprites;
 
             SpriteSheet(const std::string &path, int numSprites);
@@ -200,6 +201,41 @@ namespace engine {
             static void useShaderNormal();
             //  prepare stuff for drawing sprites
             //  static void prepareDraw();
+    };
+
+    class BitmapFont {
+        protected:
+            //  store or calculate char info
+            //  store for now
+
+            struct Charinfo {
+                int w;
+                int h;
+            } charinfo;
+
+            SpriteSheet *s;
+        
+        public:
+            
+            
+            BitmapFont(std::string);          //  font file
+            // BitmapFont(std::string, int);     //  font file, optional font size
+                                                //  dont need this on a bitmap font
+            ~BitmapFont();
+
+
+
+            void Write(std::string, float x, float y);
+            void Write(std::string, float x, float y, int w); //  specify char width in pixels
+            void WriteCentered(std::string, float x, float y);
+            void WriteCentered(std::string, float x, float y, int w); //  specify char width in pixels
+            void Dimensions(std::string, int*, int*);   //  get the expected dimensions to draw string
+            void Dimensions(std::string, int*, int*, int*);   //  get the expected dimensions to draw string
+
+            void buffer();
+            void draw();
+        
+
     };
 
     class Camera3D {
