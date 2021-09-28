@@ -143,7 +143,7 @@ void logic_game() {
 
             if(engine::checkKeyPressed(engine::jump)) {
                 state = 0;
-                pillar_height->empty();
+                pillar_height->clear();
             }
         }
         
