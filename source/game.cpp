@@ -7,10 +7,10 @@ float bg_scroll;
 double launch_timer;
 bool collision;
 
-float aya_x, aya_y, aya_y_speed, pillar_x;
-const float aya_x_speed = 480.f, aya_y_accel = 1800.f, aya_jump = -600.f, aya_rad = 64.f;
+float aya_x, aya_y, aya_y_speed, pillar_x, aya_spin;
+const float aya_x_speed = 480.f, aya_y_accel = 1800.f, aya_jump = -700.f, aya_rad = 64.f;
 
-engine::SpriteSheet *aya, *bg, *onbashira;
+engine::SpriteSheet *aya, *bg, *onbashira, *space;
 std::vector<float> *pillar_height;
 
 engine::BitmapFont *font;
@@ -31,13 +31,14 @@ void logic_game() {
         aya_y_speed = 0.f;
         aya_frame = 0;
         score = 0;
+        aya_spin = 0.f;
 
 
 
-        if(engine::checkKey(engine::jump)) {
+        if(engine::checkKeyPressed(engine::jump)) {
             state = 1;
 
-            pillar_x = 1000.f;
+            pillar_x = 400.f;
             for(int i = 0; i < 4; i++) {
                 float height = ((double)rand() / (double)RAND_MAX) * 500.f + 110.f;
                 pillar_height->push_back(height);
@@ -53,6 +54,7 @@ void logic_game() {
             aya_frame = 7;
             aya_y_speed = -600.f;
             state = 2;
+            launch_timer = 0.;
         }
     } else if(state == 2) {
         //  playing
@@ -72,10 +74,7 @@ void logic_game() {
         aya_y_speed += aya_y_accel * engine::deltatime;
         aya_y += aya_y_speed * engine::deltatime;
 
-        if(aya_y < 100.f) {
-            aya_y = 100.f;
-            aya_y_speed = 0;
-        }
+        
         
             // pillar_x starts 1000, then goes aya_x - (aya_x_speed * 2) which is 150 - 480 * 2,
             //  -810, then + pushed back 480 to -330
@@ -101,27 +100,53 @@ void logic_game() {
             ph = pillar_height->at(score + 2);
         }
 
-        collision = collisionSqsq(aya_x, aya_y, aya_rad, aya_rad, px + 2.f, ph - 376.f, 108.f, 480.f);
-        collision = collision | collisionSqsq(aya_x, aya_y, aya_rad, aya_rad, px + 2.f, ph + 376.f, 108.f, 480.f);
+        collision = collisionSqsq(aya_x, aya_y, aya_rad, aya_rad, px + 2.f, ph - 376.f, 108.f, 520.f);
+        collision = collision | collisionSqsq(aya_x, aya_y, aya_rad, aya_rad, px + 2.f, ph + 376.f, 108.f, 520.f);
 
 
 
 
-
+        if(aya_y < 50.f) {
+            aya_y = 50.f;
+            aya_y_speed = 0;
+        }
 
 
         if(aya_y > 760.f) {
             aya_y = 760.f;
             aya_y_speed = 0.f;
-            // state = 3;
+            state = 3;
         }
         if(collision) {
-            // state = 3;
+            if(score > 1) {
+                state = 3;
+                aya_y_speed = aya_jump;
+            } else if(pillar_x < aya_x - aya_x_speed * 1.5) {
+                state = 3;
+                aya_y_speed = aya_jump;
+            }
         }
         //  state 3
     } else if(state == 3) {
         //  end
         // pillar_height->empty();
+
+        launch_timer += engine::deltatime;
+        aya_y += aya_y_speed * engine::deltatime;
+
+        if(aya_y < 900.f) {
+            aya_spin -= 720.f * engine::deltatime;
+            aya_y_speed += aya_y_accel * engine::deltatime;
+        } else {
+            aya_y_speed = 0;
+
+
+            if(engine::checkKeyPressed(engine::jump)) {
+                state = 0;
+                pillar_height->empty();
+            }
+        }
+        
     }
 
 
@@ -145,14 +170,14 @@ void draw_game() {
         aya->drawSpriteCentered(aya_frame, aya_x, aya_y, 0, 116, 256);
     } else if(state == 2) {
         aya->drawSpriteCentered(aya_frame, aya_x, aya_y, (-aya_y_speed / 50), 184, 184);
-        for(int i = 0; i < 4; i++) {
+        for(int i = score > 1 ? 0 : 2 - score; i < 4; i++) {
             onbashira->drawSpriteCentered(0, pillar_x + aya_x_speed * i, pillar_height->at(score + i) + 360.f, 0.f, 240.f, 540.f);
             onbashira->drawSpriteCentered(1, pillar_x + aya_x_speed * i, pillar_height->at(score + i) - 360.f, 180.f, 240.f, 540.f);
         }
         onbashira->buffer();
         onbashira->draw();
 
-        char* c = new char[4];
+        static char c[4];
         snprintf(c, 4, "%d", score);
 
         font->WriteCentered(c, 480.f, 180.f, 80);
@@ -161,7 +186,27 @@ void draw_game() {
 
 
     } else if(state == 3) {
-        aya->drawSpriteCentered(aya_frame, aya_x, aya_y, (-aya_y_speed / 50), 184, 184);
+        aya->drawSpriteCentered(aya_frame, aya_x, aya_y, aya_spin, 184, 184);
+        for(int i = score > 1 ? 0 : 2 - score; i < 4; i++) {
+            onbashira->drawSpriteCentered(0, pillar_x + aya_x_speed * i, pillar_height->at(score + i) + 360.f, 0.f, 240.f, 540.f);
+            onbashira->drawSpriteCentered(1, pillar_x + aya_x_speed * i, pillar_height->at(score + i) - 360.f, 180.f, 240.f, 540.f);
+        }
+        onbashira->buffer();
+        onbashira->draw();
+        if((int)launch_timer % 2 == 1) {
+            space->drawSpriteCentered(0, 480, 540, 0, 256, 64);
+        } else {
+            space->drawSpriteCentered(1, 480, 540, 0, 256, 64);
+        }
+        space->buffer();
+        space->draw();
+
+        static char c[4];
+        snprintf(c, 4, "%d", score);
+
+        font->WriteCentered(c, 480.f, 180.f, 80);
+        font->buffer();
+        font->draw();
     }
 
 
@@ -178,11 +223,14 @@ void load_game() {
     engine::registerDebugWindow("test");
     engine::registerDebugVariable("Collision: ", &collision, false);
     engine::registerDebugVariable("Y ", &aya_y, false);
+    engine::registerDebugVariable("pillar_X: ", &pillar_x, false);
+    engine::registerDebugVariable("launch_timer: ", &launch_timer, false);
     
 
     aya = new engine::SpriteSheet("./data/aya.png", 9);
     onbashira = new engine::SpriteSheet("./data/onbashira.png", 2);
     bg = new engine::SpriteSheet("./data/bg.png", 2);
+    space = new engine::SpriteSheet("./data/space.png", 2);
 
 
     aya->setSprite(0, 0, 0, 58, 128);
@@ -201,6 +249,9 @@ void load_game() {
     bg->setSprite(0, 0, 0, 240, 180);
     bg->setSprite(1, 240, 0, -240, 180);
 
+    space->setSprite(0, 0, 0, 64, 16);
+    space->setSprite(1, 0, 16, 64, 16);
+
     engine::SetDrawmode(engine::DrawmodeSprite);
     engine::setDrawsize(960, 720);
 
@@ -217,4 +268,7 @@ void unload_game() {
     delete aya;
     delete onbashira;
     delete bg;
+    delete space;
+    delete pillar_height;
+    delete font;
 }

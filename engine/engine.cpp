@@ -100,9 +100,10 @@ namespace engine {
             int y = i / 16 * charinfo.h;
             s->setSprite(i, x, y, charinfo.w, charinfo.h);
         }
-        
-        
+    }
 
+    BitmapFont::~BitmapFont() {
+        delete s;
     }
 
     void BitmapFont::Dimensions(std::string text, int *w, int *h) {
@@ -1185,6 +1186,15 @@ namespace engine {
                     } else {
                         ImGui::Text(" False");
                     }
+                } else if(temp.type == 4) {
+                    //  double
+                    ImGui::Text(temp.text.c_str());
+                    ImGui::SameLine();
+                    if(temp.edit) {
+                        ImGui::InputDouble("##value", (double*)temp.value, 1.0f);
+                    } else {
+                        ImGui::Text("%f", *(double*)temp.value);
+                    }
                 }
             }
             ImGui::End();
@@ -1316,6 +1326,36 @@ namespace engine {
         imgui_t icon;
         icon.text = text;
         icon.type = 1;
+        icon.value = (void*)val;
+        icon.edit = edit;
+        if(window < imgui_windows->size()) {
+            if(imgui_windows->size() > window) {
+                imgui_windows->at(window).second->push_back(icon);
+            }
+        }
+        #endif
+    }
+
+    void registerDebugVariable(std::string text, double *val, bool edit) {
+        #ifndef IMGUI_DISABLE
+        imgui_t icon;
+        icon.text = text;
+        icon.type = 4;
+        icon.value = (void*)val;
+        icon.edit = edit;
+        if(imgui_windows) {
+            if(imgui_windows->size() > 0) {
+                imgui_windows->at(0).second->push_back(icon);
+            }
+        }
+        #endif
+    }
+
+    void registerDebugVariable(std::string text, double *val, bool edit, size_t window) {
+        #ifndef IMGUI_DISABLE
+        imgui_t icon;
+        icon.text = text;
+        icon.type = 4;
         icon.value = (void*)val;
         icon.edit = edit;
         if(window < imgui_windows->size()) {
