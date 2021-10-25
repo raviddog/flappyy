@@ -342,31 +342,38 @@ namespace engine {
                     log_debug("failed to load shaders, unable to read files %s %s\n", vertexPath + 1, fragmentPath + 1);
                 }
             } else {
-                try
-                {
-                    std::ifstream vShaderFile;
-                    std::ifstream fShaderFile;
-                    //open files
-                    vShaderFile.open(vertexPath);
-                    fShaderFile.open(fragmentPath);
-                    std::stringstream vShaderStream, fShaderStream;
+                FILE *vFile;
+                vFile = fopen(vertexPath, "rb");
 
-                    //read file's buffer contents into streams
-                    vShaderStream << vShaderFile.rdbuf();
-                    fShaderStream << fShaderFile.rdbuf();
-
-                    //close file handlers
-                    vShaderFile.close();
-                    fShaderFile.close();
-
-                    //convert stream into string
-                    vShaderCode = vShaderStream.str().c_str();
-                    fShaderCode = fShaderStream.str().c_str();
+                if(vFile) {
+                    fseek(vFile, 0L, SEEK_END);
+                    long size = ftell(vFile) + 1;
+                    fseek(vFile, 0L, SEEK_SET);
+                    char *buffer = new char[size + 1];
+                    fread(buffer, size, 1, vFile);
+                    buffer[size] = '\0';
+                    fclose(vFile);
+                    vShaderCode = buffer;
+                } else {
+                    log_debug("failed to load shader file %s\n", vertexPath);
+                    fclose(vFile);
                 }
-                catch(std::ifstream::failure &e)
-                {
-                    fail = true;
-                    log_debug("failed to load shaders, unable to read files %s %s\n", vertexPath, fragmentPath);
+
+                FILE *fFile;
+                fFile = fopen(fragmentPath, "rb");
+
+                if(fFile) {
+                    fseek(fFile, 0L, SEEK_END);
+                    long size = ftell(fFile) + 1;
+                    fseek(fFile, 0L, SEEK_SET);
+                    char *buffer = new char[size + 1];
+                    fread(buffer, size, 1, fFile);
+                    buffer[size] = '\0';
+                    fclose(fFile);
+                    fShaderCode = buffer;
+                } else {
+                    log_debug("failed to load shader file %s\n", fragmentPath);
+                    fclose(fFile);
                 }
             }
 
