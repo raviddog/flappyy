@@ -347,7 +347,7 @@ namespace engine {
 
                 if(vFile) {
                     fseek(vFile, 0L, SEEK_END);
-                    long size = ftell(vFile) + 1;
+                    long size = ftell(vFile);
                     fseek(vFile, 0L, SEEK_SET);
                     char *buffer = new char[size + 1];
                     fread(buffer, size, 1, vFile);
@@ -364,7 +364,7 @@ namespace engine {
 
                 if(fFile) {
                     fseek(fFile, 0L, SEEK_END);
-                    long size = ftell(fFile) + 1;
+                    long size = ftell(fFile);
                     fseek(fFile, 0L, SEEK_SET);
                     char *buffer = new char[size + 1];
                     fread(buffer, size, 1, fFile);
