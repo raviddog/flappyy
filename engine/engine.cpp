@@ -26,8 +26,29 @@
 
 #include "OBJ_Loader.h"
 
+/*
+ *
+ *      Sections in file:
+ * 
+ *      [TEXT]
+ *      [3DMODEL]
+ *      [SPRITE]
+ *      [DRAW]
+ *      [INIT]
+ *      [FLIP]
+ *      [IMGUI]
+ *      [ASSETSYS]
+ * 
+ * 
+ * 
+ * */
+
 namespace engine {
     Camera3D *Camera3D::bound = nullptr;
+
+    bool loadFromZip = false;
+    
+    assetsys_t *assets = nullptr;
 
     int scrWidth, scrHeight, drawWidth, drawHeight;
     bool maximised = false;
@@ -85,7 +106,7 @@ namespace engine {
         *y = *y / d;
     }
 
-    //  text
+    //  [TEXT]
     BitmapFont::BitmapFont(std::string path) {
         //  NOTE assume ascii only for now
         //  ascii is 16x8
@@ -226,7 +247,7 @@ namespace engine {
         s->draw();
     }
 
-//  managed model loading stuff
+//  [3DMODEL]
     class ManagedModel {
         public:
             int count = 1;
@@ -440,6 +461,8 @@ namespace engine {
         emptyMap(textures);
         delete textures;
     }
+
+    //  [SPRITE]
 
     SpriteSheet::SpriteSheet(const std::string &path, int numSprites) {
         load(path, numSprites);
@@ -682,7 +705,7 @@ namespace engine {
 
 
 
-    
+    //  [DRAW]
 
     void InitialiseDrawmodes() {
         //  load draw modes (shaders)
@@ -691,7 +714,7 @@ namespace engine {
         glm::vec2 scrRes = glm::vec2((float)drawWidth, (float)drawHeight);
 
         shaderSpriteSheetInvert = new gl::Shader();
-        shaderSpriteSheetInvert->load("./shaders/spritesheet.vert", "./shaders/spritesheet_invert.frag");
+        shaderSpriteSheetInvert->load("/data/shaders/spritesheet.vert", "/data/shaders/spritesheet_invert.frag");
         shaderSpriteSheetInvert->use();
         shaderSpriteSheetInvert->setInt("txUnit", 0);
         shaderSpriteSheetInvert->setVec2("res", scrRes);
@@ -703,7 +726,7 @@ namespace engine {
         shaderSpriteSheet->setVec2("res", scrRes);
 
         shader3d = new gl::Shader();
-        shader3d->load("./shaders/model.vert", "shaders/model.frag");
+        shader3d->load("./shaders/model.vert", "./shaders/model.frag");
         
         pshader = new gl::Shader();
         pshader->load("./shaders/test.vert", "./shaders/test.frag");
@@ -843,6 +866,7 @@ namespace engine {
     }
 
     //  load settings from ini file
+    //  [INIT]
     bool init(const char *title, int flags, int width, int height, const char *settingsPath) {
         debug_init();
 
@@ -996,6 +1020,19 @@ namespace engine {
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         // stbi_set_flip_vertically_on_load(true);  // don't need this because the shader i wrote accounts for it
+
+        //  attempt to load data file
+        assets = assetsys_create(0);
+        assetsys_error_t error;
+        error = assetsys_mount(assets, "data.zip", "/data");
+        if(error != ASSETSYS_SUCCESS) {
+            log_debug("mount of data file failed with error code %d\n", error);
+            loadFromZip = false;
+        } else {
+            log_debug("mounted data file\n");
+            loadFromZip = true;
+        }
+
         
         InitialiseDrawmodes(); 
         SetDrawmode(DrawmodeSprite);
@@ -1105,6 +1142,8 @@ namespace engine {
 
         log_debug("resize callback\n");
     }
+
+    //  [FLIP]
 
     void flip() {       
 
@@ -1247,6 +1286,7 @@ namespace engine {
     }
 
     void close() {
+        assetsys_dismount(assets, "data.zip", "/data");
         #ifndef IMGUI_DISABLE
         ImGui_ImplOpenGL3_Shutdown();
         ImGui_ImplGlfw_Shutdown();
@@ -1305,6 +1345,8 @@ namespace engine {
     void errorCallback(int error, const char *description) {
         log_debug("Error %d: %s\n", error, description);
     }
+
+    //  [IMGUI]
 
     void registerDebugVariable(std::string text, float *val, bool edit) {
         #ifndef IMGUI_DISABLE

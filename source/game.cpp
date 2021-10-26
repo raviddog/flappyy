@@ -209,7 +209,6 @@ void draw_game() {
         font->draw();
     }
 
-
     aya->buffer();
     aya->draw();
     

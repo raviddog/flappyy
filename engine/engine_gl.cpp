@@ -271,7 +271,20 @@ namespace engine {
 
         //  need to make more of these for different settings and shit
         void Texture::load(const std::string &path) {
-            unsigned char *data = stbi_load(path.c_str(), &srcWidth, &srcHeight, &srcChannels, 0);
+            unsigned char *data = nullptr;
+            if(loadFromZip) {
+                assetsys_file_t file;
+                assetsys_file(assets, path.c_str() + 1, &file);
+                int size = assetsys_file_size(assets, file);
+                if(size > 0) {
+                    unsigned char *buffer = new unsigned char[size];
+                    assetsys_file_load(assets, file, &size, (void*)buffer, size);
+                    data = stbi_load_from_memory(buffer, size, &srcWidth, &srcHeight, &srcChannels, 0);
+                    delete[] buffer;
+                }
+            } else {
+                data = stbi_load(path.c_str(), &srcWidth, &srcHeight, &srcChannels, 0);
+            }
             if(data) {
                 switch(srcChannels) {
                     case 3:
@@ -334,46 +347,48 @@ namespace engine {
             const char* vShaderCode = vertexCode.c_str();
             const char* fShaderCode = fragmentCode.c_str();
 
-            uint32_t vertex, fragment;
-            int success;
-            //  char infoLog[512];
+                uint32_t vertex, fragment;
+                int success;
+                char infoLog[512];
 
-            //vertex shader
-            vertex = glCreateShader(GL_VERTEX_SHADER);
-            glShaderSource(vertex, 1, &vShaderCode, NULL);
-            glCompileShader(vertex);
+                //vertex shader
+                vertex = glCreateShader(GL_VERTEX_SHADER);
+                glShaderSource(vertex, 1, &vShaderCode, NULL);
+                glCompileShader(vertex);
 
-            glGetShaderiv(vertex, GL_COMPILE_STATUS, &success);
-            if(!success) {
-                //glGetShaderInfoLog(vertex, 512, NULL, infoLog);
-                //report error, infolog contains details
-            };
+                glGetShaderiv(vertex, GL_COMPILE_STATUS, &success);
+                if(!success) {
+                    glGetShaderInfoLog(vertex, 512, NULL, infoLog);
+                    log_debug(infoLog);
+                    //report error, infolog contains details
+                };
 
-            fragment = glCreateShader(GL_FRAGMENT_SHADER);
-            glShaderSource(fragment, 1, &fShaderCode, NULL);
-            glCompileShader(fragment);
+                fragment = glCreateShader(GL_FRAGMENT_SHADER);
+                glShaderSource(fragment, 1, &fShaderCode, NULL);
+                glCompileShader(fragment);
 
-            glGetShaderiv(fragment, GL_COMPILE_STATUS, &success);
-            if(!success) {
-                //glGetShaderInfoLog(fragment, 512, NULL, infoLog)
-                //report error
-            }
+                glGetShaderiv(fragment, GL_COMPILE_STATUS, &success);
+                if(!success) {
+                    glGetShaderInfoLog(fragment, 512, NULL, infoLog);
+                    log_debug(infoLog);
+                    //report error
+                }
 
-            ID = glCreateProgram();
-            glAttachShader(ID, vertex);
-            glAttachShader(ID, fragment);
-            glLinkProgram(ID);
+                ID = glCreateProgram();
+                glAttachShader(ID, vertex);
+                glAttachShader(ID, fragment);
+                glLinkProgram(ID);
 
-            glGetProgramiv(ID, GL_LINK_STATUS, &success);
-            if(!success) {
-                // glGetProgramInfoLog(ID, 512, NULL, infoLog);
-                // printf("%s ", infoLog);
-            }
+                glGetProgramiv(ID, GL_LINK_STATUS, &success);
+                if(!success) {
+                    // glGetProgramInfoLog(ID, 512, NULL, infoLog);
+                    // printf("%s ", infoLog);
+                }
 
-            log_debug("loaded shaders %s %s\n", vertexPath, fragmentPath);
+                log_debug("loaded shaders %s %s\n", vertexPath, fragmentPath);
 
-            glDeleteShader(vertex);
-            glDeleteShader(fragment);
+                glDeleteShader(vertex);
+                glDeleteShader(fragment);
         }
 
         void Shader::use()

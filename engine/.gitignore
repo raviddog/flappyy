@@ -1,8 +1,7 @@
 #configuration folders
 /.vscode
-/release
 /build
-/test
+/builds
 
 # default c++ gitignore file
 
