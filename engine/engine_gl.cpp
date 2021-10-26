@@ -311,42 +311,66 @@ namespace engine {
 
         void Shader::load(const GLchar* vertexPath, const GLchar* fragmentPath)
         {
-            std::string vertexCode;
-            std::string fragmentCode;
-            std::ifstream vShaderFile;
-            std::ifstream fShaderFile;
+            const char* vShaderCode = nullptr;
+            const char* fShaderCode = nullptr;
+            bool fail = false;
 
-            //ensure ifstream objects can throw exceptions
-            vShaderFile.exceptions (std::ifstream::failbit | std::ifstream::badbit);
-            fShaderFile.exceptions (std::ifstream::failbit | std::ifstream::badbit);
+            if(loadFromZip) {
+                assetsys_file_t file;
+                assetsys_file(assets, vertexPath + 1, &file);
+                int size = assetsys_file_size(assets, file);
+                if(size > 0) {
+                    char *buffer = new char[size + 1];
+                    assetsys_file_load(assets, file, &size, (void*)buffer, size);
+                    buffer[size] = '\0';
+                    vShaderCode = buffer;
+                } else {
+                    fail = true;
+                }
 
-            try
-            {
-                //open files
-                vShaderFile.open(vertexPath);
-                fShaderFile.open(fragmentPath);
-                std::stringstream vShaderStream, fShaderStream;
+                assetsys_file(assets, fragmentPath + 1, &file);
+                size = assetsys_file_size(assets, file);
+                if(size > 0) {
+                    char *buffer = new char[size+1];
+                    assetsys_file_load(assets, file, &size, (void*)buffer, size);
+                    buffer[size] = '\0';
+                    fShaderCode = buffer;
+                } else {
+                    fail = true;
+                }
+                if(fail) {
+                    log_debug("failed to load shaders, unable to read files %s %s\n", vertexPath + 1, fragmentPath + 1);
+                }
+            } else {
+                try
+                {
+                    std::ifstream vShaderFile;
+                    std::ifstream fShaderFile;
+                    //open files
+                    vShaderFile.open(vertexPath);
+                    fShaderFile.open(fragmentPath);
+                    std::stringstream vShaderStream, fShaderStream;
 
-                //read file's buffer contents into streams
-                vShaderStream << vShaderFile.rdbuf();
-                fShaderStream << fShaderFile.rdbuf();
+                    //read file's buffer contents into streams
+                    vShaderStream << vShaderFile.rdbuf();
+                    fShaderStream << fShaderFile.rdbuf();
 
-                //close file handlers
-                vShaderFile.close();
-                fShaderFile.close();
+                    //close file handlers
+                    vShaderFile.close();
+                    fShaderFile.close();
 
-                //convert stream into string
-                vertexCode = vShaderStream.str();
-                fragmentCode = fShaderStream.str();
+                    //convert stream into string
+                    vShaderCode = vShaderStream.str().c_str();
+                    fShaderCode = fShaderStream.str().c_str();
+                }
+                catch(std::ifstream::failure &e)
+                {
+                    fail = true;
+                    log_debug("failed to load shaders, unable to read files %s %s\n", vertexPath, fragmentPath);
+                }
             }
-            catch(std::ifstream::failure &e)
-            {
-                log_debug("failed to load shaders, unable to read files %s %s\n", vertexPath, fragmentPath);
-            }
 
-            const char* vShaderCode = vertexCode.c_str();
-            const char* fShaderCode = fragmentCode.c_str();
-
+            if(!fail) {
                 uint32_t vertex, fragment;
                 int success;
                 char infoLog[512];
@@ -389,6 +413,7 @@ namespace engine {
 
                 glDeleteShader(vertex);
                 glDeleteShader(fragment);
+            }
         }
 
         void Shader::use()

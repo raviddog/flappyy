@@ -714,22 +714,22 @@ namespace engine {
         glm::vec2 scrRes = glm::vec2((float)drawWidth, (float)drawHeight);
 
         shaderSpriteSheetInvert = new gl::Shader();
-        shaderSpriteSheetInvert->load("/data/shaders/spritesheet.vert", "/data/shaders/spritesheet_invert.frag");
+        shaderSpriteSheetInvert->load("./data/shaders/spritesheet.vert", "./data/shaders/spritesheet_invert.frag");
         shaderSpriteSheetInvert->use();
         shaderSpriteSheetInvert->setInt("txUnit", 0);
         shaderSpriteSheetInvert->setVec2("res", scrRes);
 
         shaderSpriteSheet = new gl::Shader();
-        shaderSpriteSheet->load("./shaders/spritesheet.vert", "./shaders/spritesheet.frag");
+        shaderSpriteSheet->load("./data/shaders/spritesheet.vert", "./data/shaders/spritesheet.frag");
         shaderSpriteSheet->use();
         shaderSpriteSheet->setInt("txUnit", 0);
         shaderSpriteSheet->setVec2("res", scrRes);
 
         shader3d = new gl::Shader();
-        shader3d->load("./shaders/model.vert", "./shaders/model.frag");
+        shader3d->load("./data/shaders/model.vert", "./data/shaders/model.frag");
         
         pshader = new gl::Shader();
-        pshader->load("./shaders/test.vert", "./shaders/test.frag");
+        pshader->load("./data/shaders/test.vert", "./data/shaders/test.frag");
         pshader->use();
         pshader->setInt("screenTexture", 0);
 
